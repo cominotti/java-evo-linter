@@ -19,6 +19,7 @@ Sync directives:
 | File | Purpose |
 | --- | --- |
 | [`git-commits.md`](./rules/git-commits.md) | Commit/merge policy (signed commits, squash merge strategy, commit message format). |
+| [`licensing.md`](./rules/licensing.md) | Apache-2.0 and SPDX header requirements, with Maven-first license guardrails. |
 
 ### Skills Files (`.agents/skills`)
 
@@ -56,6 +57,10 @@ Sync directives:
   - `parameterOwnerAnnotations = ["EnterpriseValueObject"]`
 - Keep annotation matching name-based (simple/FQCN), without requiring a dependency on `java-evo`.
 - Keep suppression and baseline behavior stable and deterministic (`finding_id`-based).
+- Keep licensing guardrails active:
+  - root `LICENSE` must remain Apache-2.0,
+  - Java/shell source SPDX headers must use `Apache-2.0`,
+  - Maven `validate` must enforce SPDX policy in CI and local workflows.
 - Keep README detection examples complete: include at least one example per emitted
   `violation_role` condition (`field_type`, `method_return_type`, `method_parameter_type`,
   `record_component_type`).
@@ -87,7 +92,8 @@ Sync directives:
 
 Run these whenever relevant:
 
-1. `mvn -B -ntp verify`
-2. `mvn -B -ntp rewrite:dryRun`
-3. `mvn -B -ntp -pl linter-core,linter-cli,linter-maven-plugin -am install`
-4. `mvn -B -ntp -f examples/maven-plugin-consumer/pom.xml verify`
+1. `mvn -B -ntp validate`
+2. `mvn -B -ntp verify`
+3. `mvn -B -ntp rewrite:dryRun`
+4. `mvn -B -ntp -pl linter-core,linter-cli,linter-maven-plugin -am install`
+5. `mvn -B -ntp -f examples/maven-plugin-consumer/pom.xml verify`

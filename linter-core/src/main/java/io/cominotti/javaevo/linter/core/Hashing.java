@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package io.cominotti.javaevo.linter.core;
 
 import java.nio.charset.StandardCharsets;

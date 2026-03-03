@@ -15,6 +15,7 @@
 GitHub Actions workflow: `.github/workflows/ci.yml`
 
 - Build and test on Temurin JDK 25
+- Enforces Apache-2.0 SPDX headers via Maven `validate` (with optional `make` wrappers)
 - Builds and uploads CLI distribution archives (`zip` and `tar.gz`)
 - Builds a standalone Maven consumer example targeting `--release 21` while running on JDK 25
 
@@ -72,6 +73,12 @@ Run full verification:
 
 ```bash
 mise exec -- mvn -B -ntp verify
+```
+
+Run guardrail verification (canonical Maven flow):
+
+```bash
+mvn -B -ntp validate
 ```
 
 Run example consumer verification:
@@ -677,3 +684,27 @@ Each line is a finding object with deterministic fields including:
 - `package`, `owner_type`, `member_kind`, `member_signature`
 - `visibility`, `violation_role`, `forbidden_type`, `declared_type`
 - `message`, `suggestion`
+
+## License
+
+This project is licensed under the Apache License, Version 2.0 (Apache-2.0). See [LICENSE](LICENSE).
+
+SPDX guardrails:
+
+- Java files must start with: `// SPDX-License-Identifier: Apache-2.0`
+- Shell files must include: `# SPDX-License-Identifier: Apache-2.0` (after shebang when present)
+
+License commands (Maven-first):
+
+```bash
+mvn -B -ntp validate
+mvn -B -ntp -Plicense-fix validate
+```
+
+Optional compatibility wrappers:
+
+```bash
+make license-check
+make license-fix
+make verify
+```
