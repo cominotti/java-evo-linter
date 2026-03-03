@@ -21,17 +21,17 @@ public final class BaselineGenerateCommand extends BaseCommand implements Callab
       var engine = new LinterEngine();
       var report = engine.generateBaseline(root, effectiveConfig);
 
-      System.out.println("Baseline generated");
-      System.out.println("  path: " + report.baselinePath());
-      System.out.println("  entries: " + report.entries().size());
-      System.out.println("  active_findings: " + report.activeFindingCount());
-      System.out.println("  inline_suppressed: " + report.inlineSuppressedCount());
+      out().println("Baseline generated");
+      out().println("  path: " + report.baselinePath());
+      out().println("  entries: " + report.entries().size());
+      out().println("  active_findings: " + report.activeFindingCount());
+      out().println("  inline_suppressed: " + report.inlineSuppressedCount());
       return 0;
     } catch (LinterException exception) {
-      System.err.println("java-evo-linter: " + exception.getMessage());
+      err().println("java-evo-linter: " + exception.getMessage());
       return 2;
     } catch (Exception exception) {
-      System.err.println("java-evo-linter: unexpected error: " + exception.getMessage());
+      err().println("java-evo-linter: unexpected error: " + exception.getMessage());
       return 2;
     }
   }

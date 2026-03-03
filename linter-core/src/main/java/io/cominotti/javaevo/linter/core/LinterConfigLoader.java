@@ -49,59 +49,18 @@ public final class LinterConfigLoader {
       }
       config = objectMapper.readValue(normalizedPath.toFile(), LinterConfig.class);
     }
-
-    config.normalize();
     return config;
   }
 
   public LinterConfig applyOverrides(
       LinterConfig base, @Nullable LinterConfigOverrides overrides, Path projectRoot) {
-    var effective = base.copy();
-
     if (overrides == null) {
-      effective.normalize();
-      return effective;
+      return base;
     }
 
-    if (overrides.baselinePath != null) {
-      effective.baseline.path = normalizePath(projectRoot, overrides.baselinePath).toString();
-    }
-    if (overrides.outputFormat != null) {
-      effective.output.format = overrides.outputFormat;
-    }
-    if (overrides.jsonlPath != null) {
-      effective.output.jsonlPath = normalizePath(projectRoot, overrides.jsonlPath).toString();
-    }
-
-    if (overrides.sourceRoots != null && !overrides.sourceRoots.isEmpty()) {
-      effective.sourceRoots = new ArrayList<>();
-      for (Path sourceRoot : overrides.sourceRoots) {
-        effective.sourceRoots.add(normalizePath(projectRoot, sourceRoot).toString());
-      }
-    }
-
-    if (overrides.classpathEntries != null && !overrides.classpathEntries.isEmpty()) {
-      effective.classpath = new ArrayList<>();
-      for (Path classpathEntry : overrides.classpathEntries) {
-        effective.classpath.add(normalizePath(projectRoot, classpathEntry).toString());
-      }
-    }
-
-    if (overrides.includePrivateFields != null) {
-      effective.visibility.fields.includePrivate = overrides.includePrivateFields;
-    }
-    if (overrides.includePackagePrivateFields != null) {
-      effective.visibility.fields.includePackagePrivate = overrides.includePackagePrivateFields;
-    }
-    if (overrides.includePrivateMethods != null) {
-      effective.visibility.methods.includePrivate = overrides.includePrivateMethods;
-    }
-    if (overrides.includePackagePrivateMethods != null) {
-      effective.visibility.methods.includePackagePrivate = overrides.includePackagePrivateMethods;
-    }
-
-    effective.normalize();
-    return effective;
+    var effective = applyOutputAndBaselineOverrides(base, overrides, projectRoot);
+    effective = applyPathListOverrides(effective, overrides, projectRoot);
+    return applyVisibilityOverrides(effective, overrides);
   }
 
   public static Path normalizePath(Path projectRoot, Path value) {
@@ -117,6 +76,67 @@ public final class LinterConfigLoader {
       normalized.add(normalizePath(projectRoot, Path.of(path)));
     }
     return normalized;
+  }
+
+  private static LinterConfig applyOutputAndBaselineOverrides(
+      LinterConfig base, LinterConfigOverrides overrides, Path projectRoot) {
+    var effective = base;
+    if (overrides.baselinePath() != null) {
+      effective =
+          effective.withBaselinePath(
+              normalizePath(projectRoot, overrides.baselinePath()).toString());
+    }
+    if (overrides.outputFormat() != null) {
+      effective = effective.withOutputFormat(overrides.outputFormat());
+    }
+    if (overrides.jsonlPath() != null) {
+      effective =
+          effective.withOutputJsonlPath(
+              normalizePath(projectRoot, overrides.jsonlPath()).toString());
+    }
+    return effective;
+  }
+
+  private static LinterConfig applyPathListOverrides(
+      LinterConfig base, LinterConfigOverrides overrides, Path projectRoot) {
+    var effective = base;
+    if (!overrides.sourceRoots().isEmpty()) {
+      effective =
+          effective.withSourceRoots(normalizePathStrings(projectRoot, overrides.sourceRoots()));
+    }
+    if (!overrides.classpathEntries().isEmpty()) {
+      effective =
+          effective.withClasspath(normalizePathStrings(projectRoot, overrides.classpathEntries()));
+    }
+    return effective;
+  }
+
+  private static LinterConfig applyVisibilityOverrides(
+      LinterConfig base, LinterConfigOverrides overrides) {
+    var fields = base.visibility().fields();
+    if (overrides.includePrivateFields() != null) {
+      fields = fields.withIncludePrivate(overrides.includePrivateFields());
+    }
+    if (overrides.includePackagePrivateFields() != null) {
+      fields = fields.withIncludePackagePrivate(overrides.includePackagePrivateFields());
+    }
+
+    var methods = base.visibility().methods();
+    if (overrides.includePrivateMethods() != null) {
+      methods = methods.withIncludePrivate(overrides.includePrivateMethods());
+    }
+    if (overrides.includePackagePrivateMethods() != null) {
+      methods = methods.withIncludePackagePrivate(overrides.includePackagePrivateMethods());
+    }
+    return base.withVisibility(new VisibilitySettings(fields, methods));
+  }
+
+  private static List<String> normalizePathStrings(Path projectRoot, List<Path> paths) {
+    var normalized = new ArrayList<String>();
+    for (Path path : paths) {
+      normalized.add(normalizePath(projectRoot, path).toString());
+    }
+    return List.copyOf(normalized);
   }
 
   private static boolean hasYamlExtension(Path path) {

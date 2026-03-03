@@ -2,9 +2,6 @@
 
 package io.cominotti.javaevo.linter.maven;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,6 +9,7 @@ import java.util.List;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -41,7 +39,7 @@ class MojoSemanticsTest {
     mojo.jsonlPath = tempDir.resolve("target/findings.jsonl").toFile();
     mojo.failOnNewFindings = true;
 
-    assertThatThrownBy(mojo::execute)
+    Assertions.assertThatThrownBy(mojo::execute)
         .isInstanceOf(MojoFailureException.class)
         .hasMessageContaining("java-evo-linter found");
   }
@@ -73,8 +71,8 @@ class MojoSemanticsTest {
 
     mojo.execute();
 
-    assertThat(Files.exists(jsonlPath)).isTrue();
-    assertThat(Files.readAllLines(jsonlPath)).hasSize(1);
+    Assertions.assertThat(Files.exists(jsonlPath)).isTrue();
+    Assertions.assertThat(Files.readAllLines(jsonlPath)).hasSize(1);
   }
 
   @Test
@@ -122,7 +120,7 @@ class MojoSemanticsTest {
     diffMojo.failOnMissing = false;
     diffMojo.failOnStale = true;
 
-    assertThatThrownBy(diffMojo::execute)
+    Assertions.assertThatThrownBy(diffMojo::execute)
         .isInstanceOf(MojoFailureException.class)
         .hasMessageContaining("stale entries");
   }
@@ -153,7 +151,7 @@ class MojoSemanticsTest {
 
     mojo.execute();
 
-    assertThat(Files.readAllLines(mojo.jsonlPath.toPath())).isEmpty();
+    Assertions.assertThat(Files.readAllLines(mojo.jsonlPath.toPath())).isEmpty();
   }
 
   private Path createDefaultProjectLayout() throws IOException {

@@ -2,16 +2,13 @@
 
 package io.cominotti.javaevo.linter.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.tuple;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -49,23 +46,23 @@ class PrimitiveBoxedScannerSemanticsTest {
 
     CheckReport report = runCheck(defaultConfig());
 
-    assertThat(report.newFindings()).hasSize(10);
-    assertThat(report.rawFindingCount()).isEqualTo(10);
-    assertThat(report.inlineSuppressedCount()).isZero();
+    Assertions.assertThat(report.newFindings()).hasSize(10);
+    Assertions.assertThat(report.rawFindingCount()).isEqualTo(10);
+    Assertions.assertThat(report.inlineSuppressedCount()).isZero();
 
-    assertThat(report.newFindings())
+    Assertions.assertThat(report.newFindings())
         .extracting(Finding::forbiddenType)
         .contains("int", "java.lang.Integer", "java.lang.String");
 
-    assertThat(report.newFindings())
+    Assertions.assertThat(report.newFindings())
         .extracting(Finding::violationRole)
         .contains("field_type", "method_parameter_type", "method_return_type");
 
-    assertThat(report.newFindings())
+    Assertions.assertThat(report.newFindings())
         .extracting(Finding::memberKind)
         .contains("constructor", "field", "method");
 
-    assertThat(report.newFindings())
+    Assertions.assertThat(report.newFindings())
         .extracting(Finding::memberSignature)
         .noneMatch(signature -> signature.contains("local"));
   }
@@ -89,10 +86,10 @@ class PrimitiveBoxedScannerSemanticsTest {
 
     CheckReport report = runCheck(defaultConfig());
 
-    assertThat(report.rawFindingCount()).isEqualTo(3);
-    assertThat(report.inlineSuppressedCount()).isEqualTo(3);
-    assertThat(report.newFindings()).isEmpty();
-    assertThat(report.activeFindings()).isEmpty();
+    Assertions.assertThat(report.rawFindingCount()).isEqualTo(3);
+    Assertions.assertThat(report.inlineSuppressedCount()).isEqualTo(3);
+    Assertions.assertThat(report.newFindings()).isEmpty();
+    Assertions.assertThat(report.activeFindings()).isEmpty();
   }
 
   @Test
@@ -112,9 +109,9 @@ class PrimitiveBoxedScannerSemanticsTest {
 
     CheckReport report = runCheck(defaultConfig());
 
-    assertThat(report.rawFindingCount()).isEqualTo(2);
-    assertThat(report.inlineSuppressedCount()).isEqualTo(2);
-    assertThat(report.newFindings()).isEmpty();
+    Assertions.assertThat(report.rawFindingCount()).isEqualTo(2);
+    Assertions.assertThat(report.inlineSuppressedCount()).isEqualTo(2);
+    Assertions.assertThat(report.newFindings()).isEmpty();
   }
 
   @Test
@@ -131,13 +128,14 @@ class PrimitiveBoxedScannerSemanticsTest {
 
     CheckReport report = runCheck(defaultConfig());
 
-    assertThat(report.rawFindingCount()).isEqualTo(2);
-    assertThat(report.inlineSuppressedCount()).isEqualTo(1);
-    assertThat(report.newFindings())
+    Assertions.assertThat(report.rawFindingCount()).isEqualTo(2);
+    Assertions.assertThat(report.inlineSuppressedCount()).isEqualTo(1);
+    Assertions.assertThat(report.newFindings())
         .extracting(
             Finding::ownerType, Finding::violationRole, Finding::memberKind, Finding::forbiddenType)
         .containsExactly(
-            tuple("RecordSuppressed", "method_parameter_type", "constructor", "java.lang.Integer"));
+            Assertions.tuple(
+                "RecordSuppressed", "method_parameter_type", "constructor", "java.lang.Integer"));
   }
 
   @Test
@@ -153,10 +151,9 @@ class PrimitiveBoxedScannerSemanticsTest {
                 }
                 """);
 
-    LinterConfig config = defaultConfig();
-    config.failOnCompileErrors = true;
+    var config = defaultConfig().withFailOnCompileErrors(true);
 
-    assertThatThrownBy(() -> runCheck(config))
+    Assertions.assertThatThrownBy(() -> runCheck(config))
         .isInstanceOf(LinterException.class)
         .hasMessageContaining("Compilation errors detected");
   }
@@ -184,13 +181,12 @@ class PrimitiveBoxedScannerSemanticsTest {
                 }
                 """);
 
-    LinterConfig config = defaultConfig();
-    config.failOnCompileErrors = false;
+    var config = defaultConfig().withFailOnCompileErrors(false);
 
     CheckReport report = runCheck(config);
 
-    assertThat(report.newFindings()).isNotEmpty();
-    assertThat(report.newFindings())
+    Assertions.assertThat(report.newFindings()).isNotEmpty();
+    Assertions.assertThat(report.newFindings())
         .extracting(Finding::file)
         .anyMatch(file -> file.endsWith("Valid.java"));
   }
@@ -217,13 +213,12 @@ class PrimitiveBoxedScannerSemanticsTest {
                 }
                 """);
 
-    LinterConfig config = defaultConfig();
-    config.excludeGlobs = List.of("**/generated/**");
+    var config = defaultConfig().withExcludeGlobs(List.of("**/generated/**"));
 
     CheckReport report = runCheck(config);
 
-    assertThat(report.newFindings()).hasSize(1);
-    assertThat(report.newFindings())
+    Assertions.assertThat(report.newFindings()).hasSize(1);
+    Assertions.assertThat(report.newFindings())
         .extracting(Finding::file)
         .containsExactly("src/main/java/com/acme/A.java");
   }
@@ -272,8 +267,8 @@ class PrimitiveBoxedScannerSemanticsTest {
     Map<String, String> secondIdsBySemanticKey = toSemanticIdMap(second.newFindings());
     Map<String, Integer> secondLinesBySemanticKey = toSemanticLineMap(second.newFindings());
 
-    assertThat(secondIdsBySemanticKey).isEqualTo(firstIdsBySemanticKey);
-    assertThat(secondLinesBySemanticKey).isNotEqualTo(firstLinesBySemanticKey);
+    Assertions.assertThat(secondIdsBySemanticKey).isEqualTo(firstIdsBySemanticKey);
+    Assertions.assertThat(secondLinesBySemanticKey).isNotEqualTo(firstLinesBySemanticKey);
   }
 
   @Test
@@ -293,7 +288,7 @@ class PrimitiveBoxedScannerSemanticsTest {
 
     CheckReport report = runCheck(defaultConfig());
 
-    assertThat(report.newFindings()).isEmpty();
+    Assertions.assertThat(report.newFindings()).isEmpty();
   }
 
   @Test
@@ -320,23 +315,23 @@ class PrimitiveBoxedScannerSemanticsTest {
                 }
                 """);
 
-    LinterConfig config = defaultConfig();
-    config.visibility.methods.includePackagePrivate = false;
-
-    PackageVisibilityOverride override = new PackageVisibilityOverride();
-    override.pattern = "com.acme.special.**";
-
-    VisibilityPolicyOverride methodPolicy = new VisibilityPolicyOverride();
-    methodPolicy.includePackagePrivate = true;
-    override.methods = methodPolicy;
-
-    config.packageOverrides = List.of(override);
+    var baseConfig = defaultConfig();
+    var methods = baseConfig.visibility().methods().withIncludePackagePrivate(false);
+    var config =
+        baseConfig
+            .withVisibility(baseConfig.visibility().withMethods(methods))
+            .withPackageOverrides(
+                List.of(
+                    new PackageVisibilityOverride(
+                        "com.acme.special.**",
+                        null,
+                        new VisibilityPolicyOverride(null, Boolean.TRUE))));
 
     CheckReport report = runCheck(config);
 
-    assertThat(report.newFindings()).hasSize(1);
-    assertThat(report.newFindings().get(0).packageName()).isEqualTo("com.acme.special");
-    assertThat(report.newFindings().get(0).memberKind()).isEqualTo("method");
+    Assertions.assertThat(report.newFindings()).hasSize(1);
+    Assertions.assertThat(report.newFindings().get(0).packageName()).isEqualTo("com.acme.special");
+    Assertions.assertThat(report.newFindings().get(0).memberKind()).isEqualTo("method");
   }
 
   @Test
@@ -379,31 +374,39 @@ class PrimitiveBoxedScannerSemanticsTest {
 
     CheckReport report = runCheck(defaultConfig());
 
-    assertThat(report.newFindings())
+    Assertions.assertThat(report.newFindings())
         .extracting(
             Finding::ownerType, Finding::violationRole, Finding::memberKind, Finding::forbiddenType)
         .doesNotContain(
-            tuple("AnnotatedOwner", "field_type", "field", "int"),
-            tuple("AnnotatedOwner", "method_parameter_type", "constructor", "java.lang.Integer"),
-            tuple("AnnotatedOwner", "method_parameter_type", "method", "java.lang.Integer"),
-            tuple(
+            Assertions.tuple("AnnotatedOwner", "field_type", "field", "int"),
+            Assertions.tuple(
+                "AnnotatedOwner", "method_parameter_type", "constructor", "java.lang.Integer"),
+            Assertions.tuple(
+                "AnnotatedOwner", "method_parameter_type", "method", "java.lang.Integer"),
+            Assertions.tuple(
                 "AnnotatedRecord",
                 "record_component_type",
                 "record_component",
                 "java.lang.Integer"),
-            tuple(
+            Assertions.tuple(
                 "AnnotatedRecord", "record_component_type", "record_component", "java.lang.String"),
-            tuple("AnnotatedRecord", "method_parameter_type", "constructor", "java.lang.Integer"),
-            tuple("AnnotatedRecord", "method_parameter_type", "constructor", "java.lang.String"))
+            Assertions.tuple(
+                "AnnotatedRecord", "method_parameter_type", "constructor", "java.lang.Integer"),
+            Assertions.tuple(
+                "AnnotatedRecord", "method_parameter_type", "constructor", "java.lang.String"))
         .contains(
-            tuple("AnnotatedOwner", "method_return_type", "method", "java.lang.String"),
-            tuple("PlainOwner", "field_type", "field", "int"),
-            tuple("PlainOwner", "method_parameter_type", "method", "java.lang.Integer"),
-            tuple("PlainOwner", "method_return_type", "method", "java.lang.String"),
-            tuple("PlainRecord", "record_component_type", "record_component", "java.lang.Integer"),
-            tuple("PlainRecord", "record_component_type", "record_component", "java.lang.String"),
-            tuple("PlainRecord", "method_parameter_type", "constructor", "java.lang.Integer"),
-            tuple("PlainRecord", "method_parameter_type", "constructor", "java.lang.String"));
+            Assertions.tuple("AnnotatedOwner", "method_return_type", "method", "java.lang.String"),
+            Assertions.tuple("PlainOwner", "field_type", "field", "int"),
+            Assertions.tuple("PlainOwner", "method_parameter_type", "method", "java.lang.Integer"),
+            Assertions.tuple("PlainOwner", "method_return_type", "method", "java.lang.String"),
+            Assertions.tuple(
+                "PlainRecord", "record_component_type", "record_component", "java.lang.Integer"),
+            Assertions.tuple(
+                "PlainRecord", "record_component_type", "record_component", "java.lang.String"),
+            Assertions.tuple(
+                "PlainRecord", "method_parameter_type", "constructor", "java.lang.Integer"),
+            Assertions.tuple(
+                "PlainRecord", "method_parameter_type", "constructor", "java.lang.String"));
   }
 
   @Test
@@ -417,19 +420,21 @@ class PrimitiveBoxedScannerSemanticsTest {
                 }
                 """);
 
-    LinterConfig config = defaultConfig();
-    config.visibility.fields.includePrivate = false;
-    config.visibility.fields.includePackagePrivate = false;
-    config.visibility.methods.includePrivate = false;
-    config.visibility.methods.includePackagePrivate = false;
+    var config =
+        defaultConfig()
+            .withVisibility(
+                new VisibilitySettings(
+                    new VisibilityPolicy(Boolean.FALSE, Boolean.FALSE),
+                    new VisibilityPolicy(Boolean.FALSE, Boolean.FALSE)));
 
     CheckReport report = runCheck(config);
 
-    assertThat(report.newFindings())
+    Assertions.assertThat(report.newFindings())
         .extracting(
             Finding::ownerType, Finding::violationRole, Finding::memberKind, Finding::forbiddenType)
         .containsExactly(
-            tuple("OnlyRecord", "record_component_type", "record_component", "java.lang.Integer"));
+            Assertions.tuple(
+                "OnlyRecord", "record_component_type", "record_component", "java.lang.Integer"));
   }
 
   @Test
@@ -455,20 +460,21 @@ class PrimitiveBoxedScannerSemanticsTest {
                 }
                 """);
 
-    LinterConfig config = defaultConfig();
-    config.annotatedTypeExclusions.fieldLikeOwnerAnnotations = List.of();
-    config.annotatedTypeExclusions.parameterOwnerAnnotations = List.of();
+    var config =
+        defaultConfig()
+            .withAnnotatedTypeExclusions(new AnnotatedTypeExclusions(List.of(), List.of()));
 
     CheckReport report = runCheck(config);
 
-    assertThat(report.newFindings())
+    Assertions.assertThat(report.newFindings())
         .extracting(
             Finding::ownerType, Finding::violationRole, Finding::memberKind, Finding::forbiddenType)
         .contains(
-            tuple("OwnerScope", "field_type", "field", "int"),
-            tuple("OwnerScope", "method_parameter_type", "constructor", "java.lang.Integer"),
-            tuple("OwnerScope", "method_parameter_type", "method", "java.lang.Integer"),
-            tuple("OwnerScope", "method_return_type", "method", "java.lang.String"));
+            Assertions.tuple("OwnerScope", "field_type", "field", "int"),
+            Assertions.tuple(
+                "OwnerScope", "method_parameter_type", "constructor", "java.lang.Integer"),
+            Assertions.tuple("OwnerScope", "method_parameter_type", "method", "java.lang.Integer"),
+            Assertions.tuple("OwnerScope", "method_return_type", "method", "java.lang.String"));
   }
 
   @Test
@@ -498,15 +504,17 @@ class PrimitiveBoxedScannerSemanticsTest {
                 }
                 """);
 
-    LinterConfig config = defaultConfig();
-    config.annotatedTypeExclusions.fieldLikeOwnerAnnotations =
-        List.of("com.acme.annotations.DomainMarker");
-    config.annotatedTypeExclusions.parameterOwnerAnnotations =
-        List.of("com.acme.annotations.DomainMarker");
+    var config =
+        defaultConfig()
+            .withAnnotatedTypeExclusions(
+                new AnnotatedTypeExclusions(
+                    List.of("com.acme.annotations.DomainMarker"),
+                    List.of("com.acme.annotations.DomainMarker")));
 
     CheckReport report = runCheck(config);
 
-    assertThat(report.newFindings()).extracting(Finding::ownerType).doesNotContain("FqcnOwner");
+    var ownerTypes = report.newFindings().stream().map(Finding::ownerType).toList();
+    Assertions.assertThat(ownerTypes.contains("FqcnOwner")).isFalse();
   }
 
   private CheckReport runCheck(LinterConfig config) throws Exception {
@@ -514,9 +522,7 @@ class PrimitiveBoxedScannerSemanticsTest {
   }
 
   private LinterConfig defaultConfig() {
-    LinterConfig config = new LinterConfig();
-    config.baseline.enabled = false;
-    return config;
+    return new LinterConfig().withBaseline(new BaselineSettings(Boolean.FALSE, null));
   }
 
   private Path writeSource(String relativePath, String content) throws IOException {

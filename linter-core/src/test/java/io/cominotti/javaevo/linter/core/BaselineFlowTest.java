@@ -2,11 +2,10 @@
 
 package io.cominotti.javaevo.linter.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -17,29 +16,31 @@ class BaselineFlowTest {
   void supportsBaselineGenerateCheckAndDiff() throws Exception {
     writeSource(baseSource(false));
 
-    LinterConfig config = new LinterConfig();
-    config.baseline.enabled = true;
-    config.baseline.path = tempDir.resolve(".java-evo-linter-baseline.jsonl").toString();
+    var config =
+        new LinterConfig()
+            .withBaseline(
+                new BaselineSettings(
+                    Boolean.TRUE, tempDir.resolve(".java-evo-linter-baseline.jsonl").toString()));
 
     LinterEngine engine = new LinterEngine();
 
     BaselineGenerationReport generationReport = engine.generateBaseline(tempDir, config);
-    assertThat(generationReport.entries()).hasSize(5);
-    assertThat(Files.exists(generationReport.baselinePath())).isTrue();
+    Assertions.assertThat(generationReport.entries()).hasSize(5);
+    Assertions.assertThat(Files.exists(generationReport.baselinePath())).isTrue();
 
     CheckReport cleanCheck = engine.check(tempDir, config);
-    assertThat(cleanCheck.newFindings()).isEmpty();
-    assertThat(cleanCheck.baselineSuppressedCount()).isEqualTo(5);
+    Assertions.assertThat(cleanCheck.newFindings()).isEmpty();
+    Assertions.assertThat(cleanCheck.baselineSuppressedCount()).isEqualTo(5);
 
     writeSource(baseSource(true));
 
     CheckReport checkWithNewFinding = engine.check(tempDir, config);
-    assertThat(checkWithNewFinding.newFindings()).hasSize(1);
-    assertThat(checkWithNewFinding.staleBaselineEntries()).isEmpty();
+    Assertions.assertThat(checkWithNewFinding.newFindings()).hasSize(1);
+    Assertions.assertThat(checkWithNewFinding.staleBaselineEntries()).isEmpty();
 
     BaselineDiffReport diffReport = engine.diffBaseline(tempDir, config);
-    assertThat(diffReport.newFindings()).hasSize(1);
-    assertThat(diffReport.staleEntries()).isEmpty();
+    Assertions.assertThat(diffReport.newFindings()).hasSize(1);
+    Assertions.assertThat(diffReport.staleEntries()).isEmpty();
   }
 
   private void writeSource(String source) throws IOException {

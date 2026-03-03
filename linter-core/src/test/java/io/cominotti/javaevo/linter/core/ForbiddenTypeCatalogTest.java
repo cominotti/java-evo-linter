@@ -2,34 +2,32 @@
 
 package io.cominotti.javaevo.linter.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class ForbiddenTypeCatalogTest {
   @Test
   void normalizesPrimitiveAndSimpleNames() {
-    assertThat(ForbiddenTypeCatalog.normalizeConfiguredType("INT")).isEqualTo("int");
-    assertThat(ForbiddenTypeCatalog.normalizeConfiguredType("Integer"))
+    Assertions.assertThat(ForbiddenTypeCatalog.normalizeConfiguredType("INT")).isEqualTo("int");
+    Assertions.assertThat(ForbiddenTypeCatalog.normalizeConfiguredType("Integer"))
         .isEqualTo("java.lang.Integer");
-    assertThat(ForbiddenTypeCatalog.normalizeConfiguredType("java.lang.Integer"))
+    Assertions.assertThat(ForbiddenTypeCatalog.normalizeConfiguredType("java.lang.Integer"))
         .isEqualTo("java.lang.Integer");
-    assertThat(ForbiddenTypeCatalog.normalizeConfiguredType("String"))
+    Assertions.assertThat(ForbiddenTypeCatalog.normalizeConfiguredType("String"))
         .isEqualTo("java.lang.String");
-    assertThat(ForbiddenTypeCatalog.normalizeConfiguredType("com.acme.Value"))
+    Assertions.assertThat(ForbiddenTypeCatalog.normalizeConfiguredType("com.acme.Value"))
         .isEqualTo("com.acme.Value");
   }
 
   @Test
   void rejectsNullAndBlankTypes() {
-    assertThatThrownBy(() -> ForbiddenTypeCatalog.normalizeConfiguredType(null))
+    Assertions.assertThatThrownBy(() -> ForbiddenTypeCatalog.normalizeConfiguredType(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("cannot be null");
 
-    assertThatThrownBy(() -> ForbiddenTypeCatalog.normalizeConfiguredType("   "))
+    Assertions.assertThatThrownBy(() -> ForbiddenTypeCatalog.normalizeConfiguredType("   "))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("cannot be blank");
   }
@@ -38,22 +36,27 @@ class ForbiddenTypeCatalogTest {
   void defaultCatalogContainsExpectedBuiltins() {
     List<String> defaults = ForbiddenTypeCatalog.defaultForbiddenTypes();
 
-    assertThat(defaults)
+    Assertions.assertThat(defaults)
         .contains("int", "double", "char")
-        .contains("java.lang.Integer", "java.lang.String", "java.lang.Boolean");
-    assertThat(defaults).hasSize(17);
+        .contains("java.lang.Integer", "java.lang.String", "java.lang.Boolean")
+        .hasSize(17);
   }
 
   @Test
   void configNormalizationCanonicalizesAndDeduplicatesForbiddenTypes() {
-    LinterConfig config = new LinterConfig();
-    config.forbiddenTypes =
-        new ArrayList<>(
-            List.of("int", "INT", "Integer", "java.lang.Integer", "String", "java.lang.String"));
+    var config =
+        new LinterConfig()
+            .withForbiddenTypes(
+                new ArrayList<>(
+                    List.of(
+                        "int",
+                        "INT",
+                        "Integer",
+                        "java.lang.Integer",
+                        "String",
+                        "java.lang.String")));
 
-    config.normalize();
-
-    assertThat(config.forbiddenTypes)
+    Assertions.assertThat(config.forbiddenTypes())
         .containsExactly("int", "java.lang.Integer", "java.lang.String");
   }
 }

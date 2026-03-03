@@ -26,6 +26,7 @@ import java.util.Deque;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
@@ -50,17 +51,17 @@ public final class PrimitiveBoxedSignatureScanner {
   public PrimitiveBoxedSignatureScanner(Path projectRoot, LinterConfig config) {
     this.projectRoot = projectRoot;
     this.config = config;
-    this.forbiddenTypeCatalog = new ForbiddenTypeCatalog(config.forbiddenTypes);
-    this.visibilityResolver = new VisibilityResolver(config.visibility, config.packageOverrides);
+    this.forbiddenTypeCatalog = new ForbiddenTypeCatalog(config.forbiddenTypes());
+    this.visibilityResolver =
+        new VisibilityResolver(config.visibility(), config.packageOverrides());
     AnnotatedTypeExclusions exclusions =
-        config.annotatedTypeExclusions == null
+        config.annotatedTypeExclusions() == null
             ? new AnnotatedTypeExclusions()
-            : config.annotatedTypeExclusions.copy();
-    exclusions.normalize();
+            : config.annotatedTypeExclusions();
     this.fieldLikeOwnerAnnotationMatcher =
-        AnnotationNameMatcher.fromConfigured(exclusions.fieldLikeOwnerAnnotations);
+        AnnotationNameMatcher.fromConfigured(exclusions.fieldLikeOwnerAnnotations());
     this.parameterOwnerAnnotationMatcher =
-        AnnotationNameMatcher.fromConfigured(exclusions.parameterOwnerAnnotations);
+        AnnotationNameMatcher.fromConfigured(exclusions.parameterOwnerAnnotations());
   }
 
   public ScanReport scan() throws LinterException {
@@ -85,13 +86,7 @@ public final class PrimitiveBoxedSignatureScanner {
       var task =
           (JavacTask) compiler.getTask(null, fileManager, diagnostics, options, null, javaFiles);
 
-      Iterable<? extends CompilationUnitTree> compilationUnits;
-      try {
-        compilationUnits = task.parse();
-        task.analyze();
-      } catch (IOException exception) {
-        throw new LinterException("Failed while parsing Java sources", exception);
-      }
+      var compilationUnits = parseAndAnalyze(task);
 
       failOnCompileErrorsIfConfigured(diagnostics);
 
@@ -113,7 +108,7 @@ public final class PrimitiveBoxedSignatureScanner {
   }
 
   private void configureLocations(StandardJavaFileManager fileManager) throws IOException {
-    var sourceRoots = LinterConfigLoader.normalizePaths(projectRoot, config.sourceRoots);
+    var sourceRoots = LinterConfigLoader.normalizePaths(projectRoot, config.sourceRoots());
     var existingSourceRoots = new ArrayList<Path>();
     for (Path sourceRoot : sourceRoots) {
       if (Files.isDirectory(sourceRoot)) {
@@ -124,15 +119,15 @@ public final class PrimitiveBoxedSignatureScanner {
       fileManager.setLocationFromPaths(StandardLocation.SOURCE_PATH, existingSourceRoots);
     }
 
-    if (config.classpath != null && !config.classpath.isEmpty()) {
-      var classpathEntries = LinterConfigLoader.normalizePaths(projectRoot, config.classpath);
+    if (config.classpath() != null && !config.classpath().isEmpty()) {
+      var classpathEntries = LinterConfigLoader.normalizePaths(projectRoot, config.classpath());
       fileManager.setLocationFromPaths(StandardLocation.CLASS_PATH, classpathEntries);
     }
   }
 
   private void failOnCompileErrorsIfConfigured(DiagnosticCollector<JavaFileObject> diagnostics)
       throws LinterException {
-    if (!config.failOnCompileErrors) {
+    if (!config.failOnCompileErrors()) {
       return;
     }
 
@@ -168,47 +163,68 @@ public final class PrimitiveBoxedSignatureScanner {
   }
 
   private List<Path> discoverSourceFiles() throws LinterException {
-    var includeMatchers = toPathMatchers(config.includeGlobs);
-    var excludeMatchers = toPathMatchers(config.excludeGlobs);
+    var includeMatchers = toPathMatchers(config.includeGlobs());
+    var excludeMatchers = toPathMatchers(config.excludeGlobs());
 
     var sourceFiles = new LinkedHashSet<Path>();
-    for (String rootEntry : config.sourceRoots) {
+    for (String rootEntry : config.sourceRoots()) {
       Path sourceRoot = LinterConfigLoader.normalizePath(projectRoot, Path.of(rootEntry));
-      if (!Files.isDirectory(sourceRoot)) {
-        continue;
-      }
-
-      try (var sources = Files.walk(sourceRoot)) {
-        sources
-            .filter(
-                path ->
-                    Files.isRegularFile(path) && path.getFileName().toString().endsWith(".java"))
-            .forEach(
-                path -> {
-                  Path relativePath;
-                  try {
-                    relativePath = projectRoot.relativize(path);
-                  } catch (IllegalArgumentException _) {
-                    return;
-                  }
-
-                  if (!includeMatchers.isEmpty() && !matchesAny(includeMatchers, relativePath)) {
-                    return;
-                  }
-                  if (matchesAny(excludeMatchers, relativePath)) {
-                    return;
-                  }
-
-                  sourceFiles.add(path.normalize());
-                });
-      } catch (IOException exception) {
-        throw new LinterException("Failed walking source root: " + sourceRoot, exception);
+      if (Files.isDirectory(sourceRoot)) {
+        collectSourceFilesFromRoot(sourceRoot, includeMatchers, excludeMatchers, sourceFiles);
       }
     }
 
     var sorted = new ArrayList<Path>(sourceFiles);
     Collections.sort(sorted);
     return sorted;
+  }
+
+  private Iterable<? extends CompilationUnitTree> parseAndAnalyze(JavacTask task)
+      throws LinterException {
+    try {
+      var compilationUnits = task.parse();
+      task.analyze();
+      return compilationUnits;
+    } catch (IOException exception) {
+      throw new LinterException("Failed while parsing Java sources", exception);
+    }
+  }
+
+  private void collectSourceFilesFromRoot(
+      Path sourceRoot,
+      List<PathMatcher> includeMatchers,
+      List<PathMatcher> excludeMatchers,
+      Set<Path> sourceFiles)
+      throws LinterException {
+    try (var sources = Files.walk(sourceRoot)) {
+      sources
+          .filter(
+              path -> Files.isRegularFile(path) && path.getFileName().toString().endsWith(".java"))
+          .forEach(
+              path -> {
+                relativizePath(path)
+                    .filter(
+                        relativePath ->
+                            shouldInclude(relativePath, includeMatchers, excludeMatchers))
+                    .ifPresent(_ -> sourceFiles.add(path.normalize()));
+              });
+    } catch (IOException exception) {
+      throw new LinterException("Failed walking source root: " + sourceRoot, exception);
+    }
+  }
+
+  private Optional<Path> relativizePath(Path path) {
+    try {
+      return Optional.of(projectRoot.relativize(path));
+    } catch (IllegalArgumentException _) {
+      return Optional.empty();
+    }
+  }
+
+  private boolean shouldInclude(
+      Path relativePath, List<PathMatcher> includeMatchers, List<PathMatcher> excludeMatchers) {
+    var includeMatches = includeMatchers.isEmpty() || matchesAny(includeMatchers, relativePath);
+    return includeMatches && !matchesAny(excludeMatchers, relativePath);
   }
 
   private List<PathMatcher> toPathMatchers(List<String> globs) throws LinterException {
@@ -344,9 +360,9 @@ public final class PrimitiveBoxedSignatureScanner {
           classSuppressionStack.peek() != null && classSuppressionStack.peek();
       var classSuppressed =
           inheritedSuppression
-              || (config.suppression.inlineEnabled
+              || (config.suppression().inlineEnabled()
                   && InlineSuppression.isSuppressed(
-                      node.getModifiers().getAnnotations(), config.suppression.keys));
+                      node.getModifiers().getAnnotations(), config.suppression().keys()));
       classSuppressionStack.push(classSuppressed);
       fieldLikeOwnerExclusionStack.push(
           ownerHasExcludedAnnotation(
@@ -404,13 +420,14 @@ public final class PrimitiveBoxedSignatureScanner {
       emitFindings(
           node.getType(),
           new TreePath(getCurrentPath(), node.getType()),
-          ViolationRole.FIELD_TYPE,
-          MemberKind.FIELD,
-          ownerType,
-          memberSignature,
-          visibility,
-          node.getName().toString(),
-          inlineSuppressed);
+          new EmissionContext(
+              ViolationRole.FIELD_TYPE,
+              MemberKind.FIELD,
+              ownerType,
+              memberSignature,
+              visibility,
+              node.getName().toString(),
+              inlineSuppressed));
     }
 
     private void inspectMethod(MethodTree node) {
@@ -428,37 +445,35 @@ public final class PrimitiveBoxedSignatureScanner {
         emitFindings(
             node.getReturnType(),
             new TreePath(getCurrentPath(), node.getReturnType()),
-            ViolationRole.METHOD_RETURN_TYPE,
-            MemberKind.METHOD,
-            ownerType,
-            methodSignature,
-            visibility,
-            "return",
-            inlineSuppressed);
+            new EmissionContext(
+                ViolationRole.METHOD_RETURN_TYPE,
+                MemberKind.METHOD,
+                ownerType,
+                methodSignature,
+                visibility,
+                "return",
+                inlineSuppressed));
       }
 
       List<? extends VariableTree> parameters = node.getParameters();
       for (var index = 0; index < parameters.size(); index++) {
-        if (isCurrentOwnerParameterExcluded()) {
-          continue;
+        if (!isCurrentOwnerParameterExcluded()) {
+          var parameter = parameters.get(index);
+          if (parameter.getType() != null) {
+            var parameterPath = new TreePath(getCurrentPath(), parameter);
+            emitFindings(
+                parameter.getType(),
+                new TreePath(parameterPath, parameter.getType()),
+                new EmissionContext(
+                    ViolationRole.METHOD_PARAMETER_TYPE,
+                    constructor ? MemberKind.CONSTRUCTOR : MemberKind.METHOD,
+                    ownerType,
+                    methodSignature,
+                    visibility,
+                    "param:" + index,
+                    inlineSuppressed));
+          }
         }
-
-        var parameter = parameters.get(index);
-        if (parameter.getType() == null) {
-          continue;
-        }
-
-        var parameterPath = new TreePath(getCurrentPath(), parameter);
-        emitFindings(
-            parameter.getType(),
-            new TreePath(parameterPath, parameter.getType()),
-            ViolationRole.METHOD_PARAMETER_TYPE,
-            constructor ? MemberKind.CONSTRUCTOR : MemberKind.METHOD,
-            ownerType,
-            methodSignature,
-            visibility,
-            "param:" + index,
-            inlineSuppressed);
       }
     }
 
@@ -478,25 +493,17 @@ public final class PrimitiveBoxedSignatureScanner {
       emitFindings(
           recordComponent.getType(),
           new TreePath(componentPath, recordComponent.getType()),
-          ViolationRole.RECORD_COMPONENT_TYPE,
-          MemberKind.RECORD_COMPONENT,
-          ownerType,
-          memberSignature,
-          Visibility.PUBLIC,
-          recordComponent.getName().toString(),
-          inlineSuppressed);
+          new EmissionContext(
+              ViolationRole.RECORD_COMPONENT_TYPE,
+              MemberKind.RECORD_COMPONENT,
+              ownerType,
+              memberSignature,
+              Visibility.PUBLIC,
+              recordComponent.getName().toString(),
+              inlineSuppressed));
     }
 
-    private void emitFindings(
-        Tree typeTree,
-        TreePath typePath,
-        ViolationRole role,
-        MemberKind memberKind,
-        String ownerType,
-        String memberSignature,
-        Visibility visibility,
-        String roleQualifier,
-        boolean inlineSuppressed) {
+    private void emitFindings(Tree typeTree, TreePath typePath, EmissionContext context) {
       var typeMirror = trees.getTypeMirror(typePath);
       var matches = forbiddenTypeCatalog.collectForbiddenMatches(typeMirror);
       if (matches.isEmpty()) {
@@ -505,7 +512,7 @@ public final class PrimitiveBoxedSignatureScanner {
 
       for (String forbiddenType : matches) {
         counts.rawFindings++;
-        if (inlineSuppressed) {
+        if (context.inlineSuppressed()) {
           counts.inlineSuppressedFindings++;
           continue;
         }
@@ -518,11 +525,11 @@ public final class PrimitiveBoxedSignatureScanner {
                 "\u001f",
                 RuleIds.PRIMITIVE_BOXED_SIGNATURE,
                 packageName,
-                ownerType,
-                memberKind.name(),
-                memberSignature,
-                role.name(),
-                roleQualifier,
+                context.ownerType(),
+                context.memberKind().name(),
+                context.memberSignature(),
+                context.role().name(),
+                context.roleQualifier(),
                 forbiddenType);
 
         findings.add(
@@ -535,11 +542,11 @@ public final class PrimitiveBoxedSignatureScanner {
                 position.line(),
                 position.column(),
                 packageName,
-                ownerType,
-                memberKind.name().toLowerCase(Locale.ROOT),
-                memberSignature,
-                visibility.name().toLowerCase(Locale.ROOT),
-                role.name().toLowerCase(Locale.ROOT),
+                context.ownerType(),
+                context.memberKind().name().toLowerCase(Locale.ROOT),
+                context.memberSignature(),
+                context.visibility().name().toLowerCase(Locale.ROOT),
+                context.role().name().toLowerCase(Locale.ROOT),
                 forbiddenType,
                 declaredType,
                 "Forbidden primitive/boxed type in production signature",
@@ -570,6 +577,15 @@ public final class PrimitiveBoxedSignatureScanner {
 
       return signature.toString();
     }
+
+    private record EmissionContext(
+        ViolationRole role,
+        MemberKind memberKind,
+        String ownerType,
+        String memberSignature,
+        Visibility visibility,
+        String roleQualifier,
+        boolean inlineSuppressed) {}
 
     private String buildOwnerType() {
       var names = new ArrayList<String>(ownerStack);
@@ -639,7 +655,7 @@ public final class PrimitiveBoxedSignatureScanner {
     }
 
     private boolean isInlineSuppressed(ModifiersTree modifiersTree) {
-      if (!config.suppression.inlineEnabled) {
+      if (!config.suppression().inlineEnabled()) {
         return false;
       }
 
@@ -649,7 +665,7 @@ public final class PrimitiveBoxedSignatureScanner {
       }
 
       return InlineSuppression.isSuppressed(
-          modifiersTree.getAnnotations(), config.suppression.keys);
+          modifiersTree.getAnnotations(), config.suppression().keys());
     }
 
     private Visibility resolveVisibility(ModifiersTree modifiersTree) {

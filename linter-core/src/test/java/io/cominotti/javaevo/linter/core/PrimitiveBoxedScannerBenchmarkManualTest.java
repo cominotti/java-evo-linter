@@ -2,20 +2,20 @@
 
 package io.cominotti.javaevo.linter.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestReporter;
 import org.junit.jupiter.api.io.TempDir;
 
-class PrimitiveBoxedScannerBenchmarkManual {
+class PrimitiveBoxedScannerBenchmarkManualTest {
   @TempDir Path tempDir;
 
   @Test
-  void scansLargeSyntheticTree() throws Exception {
+  void scansLargeSyntheticTree(TestReporter testReporter) throws Exception {
     Assumptions.assumeTrue(
         Boolean.getBoolean("javaevo.run.benchmarks"), "Enable with -Djavaevo.run.benchmarks=true");
 
@@ -28,8 +28,7 @@ class PrimitiveBoxedScannerBenchmarkManual {
       writeCompilationUnit(sourceRoot, index);
     }
 
-    var config = new LinterConfig();
-    config.baseline.enabled = false;
+    var config = new LinterConfig().withBaseline(new BaselineSettings(Boolean.FALSE, null));
 
     var engine = new LinterEngine();
     engine.check(tempDir, config); // Warm up compiler and scanner paths.
@@ -39,17 +38,18 @@ class PrimitiveBoxedScannerBenchmarkManual {
     var elapsedMillis = (System.nanoTime() - startedAt) / 1_000_000L;
 
     var expectedFindings = fileCount * 3;
-    assertThat(report.newFindings()).hasSize(expectedFindings);
-
-    System.out.printf(
-        Locale.ROOT,
-        "Large-tree benchmark: files=%d findings=%d elapsedMs=%d%n",
-        fileCount,
-        expectedFindings,
-        elapsedMillis);
+    Assertions.assertThat(report.newFindings()).hasSize(expectedFindings);
+    testReporter.publishEntry(
+        "benchmark",
+        String.format(
+            Locale.ROOT,
+            "Large-tree benchmark: files=%d findings=%d elapsedMs=%d",
+            fileCount,
+            expectedFindings,
+            elapsedMillis));
 
     if (maxMillis >= 0) {
-      assertThat(elapsedMillis).isLessThanOrEqualTo((long) maxMillis);
+      Assertions.assertThat(elapsedMillis).isLessThanOrEqualTo((long) maxMillis);
     }
   }
 

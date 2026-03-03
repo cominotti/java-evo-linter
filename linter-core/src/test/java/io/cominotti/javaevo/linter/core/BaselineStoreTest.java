@@ -2,12 +2,10 @@
 
 package io.cominotti.javaevo.linter.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -28,8 +26,10 @@ class BaselineStoreTest {
     store.writeEntries(baselinePath, entries);
     List<BaselineEntry> readEntries = store.readEntries(baselinePath);
 
-    assertThat(readEntries).extracting(BaselineEntry::findingId).containsExactly("a-id", "b-id");
-    assertThat(store.readFindingIds(baselinePath)).containsExactly("a-id", "b-id");
+    Assertions.assertThat(readEntries)
+        .extracting(BaselineEntry::findingId)
+        .containsExactly("a-id", "b-id");
+    Assertions.assertThat(store.readFindingIds(baselinePath)).containsExactly("a-id", "b-id");
   }
 
   @Test
@@ -42,7 +42,9 @@ class BaselineStoreTest {
 
     List<BaselineEntry> entries = store.toEntries(List.of(duplicateA, duplicateB, unique));
 
-    assertThat(entries).extracting(BaselineEntry::findingId).containsExactly("id-1", "id-2");
+    Assertions.assertThat(entries)
+        .extracting(BaselineEntry::findingId)
+        .containsExactly("id-1", "id-2");
   }
 
   @Test
@@ -51,7 +53,7 @@ class BaselineStoreTest {
     Path baselinePath = tempDir.resolve("invalid.jsonl");
     Files.writeString(baselinePath, "{not-json}\n");
 
-    assertThatThrownBy(() -> store.readEntries(baselinePath))
+    Assertions.assertThatThrownBy(() -> store.readEntries(baselinePath))
         .isInstanceOf(LinterException.class)
         .hasMessageContaining("Invalid baseline JSONL");
   }
@@ -66,7 +68,7 @@ class BaselineStoreTest {
                 {"rule_id":"primitive-boxed-signature"}
                 """);
 
-    assertThatThrownBy(() -> store.readEntries(baselinePath))
+    Assertions.assertThatThrownBy(() -> store.readEntries(baselinePath))
         .isInstanceOf(LinterException.class)
         .hasMessageContaining("missing finding_id");
   }

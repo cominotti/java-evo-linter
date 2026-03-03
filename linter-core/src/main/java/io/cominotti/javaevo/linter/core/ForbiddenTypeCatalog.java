@@ -116,57 +116,56 @@ public final class ForbiddenTypeCatalog {
     }
 
     switch (kind) {
-      case ARRAY -> {
-        var arrayType = (ArrayType) typeMirror;
-        collectForbiddenMatchesRecursive(arrayType.getComponentType(), matches, visited);
-      }
-      case DECLARED -> {
-        var declaredType = (DeclaredType) typeMirror;
-        var element = declaredType.asElement();
-        if (element instanceof TypeElement typeElement) {
-          var qualifiedName = typeElement.getQualifiedName().toString();
-          if (forbiddenDeclaredTypes.contains(qualifiedName)) {
-            matches.add(qualifiedName);
-          }
-        }
-        for (TypeMirror typeArgument : declaredType.getTypeArguments()) {
-          collectForbiddenMatchesRecursive(typeArgument, matches, visited);
-        }
-      }
-      case ERROR -> {
-        var errorType = (ErrorType) typeMirror;
-        var element = errorType.asElement();
-        if (element instanceof TypeElement typeElement) {
-          var qualifiedName = typeElement.getQualifiedName().toString();
-          if (forbiddenDeclaredTypes.contains(qualifiedName)) {
-            matches.add(qualifiedName);
-          }
-        }
-      }
-      case TYPEVAR -> {
-        var typeVariable = (TypeVariable) typeMirror;
-        collectForbiddenMatchesRecursive(typeVariable.getUpperBound(), matches, visited);
-        collectForbiddenMatchesRecursive(typeVariable.getLowerBound(), matches, visited);
-      }
-      case WILDCARD -> {
-        var wildcardType = (WildcardType) typeMirror;
-        collectForbiddenMatchesRecursive(wildcardType.getExtendsBound(), matches, visited);
-        collectForbiddenMatchesRecursive(wildcardType.getSuperBound(), matches, visited);
-      }
-      case UNION -> {
-        var unionType = (UnionType) typeMirror;
-        for (TypeMirror alternative : unionType.getAlternatives()) {
-          collectForbiddenMatchesRecursive(alternative, matches, visited);
-        }
-      }
-      case INTERSECTION -> {
-        var intersectionType = (IntersectionType) typeMirror;
-        for (TypeMirror bound : intersectionType.getBounds()) {
-          collectForbiddenMatchesRecursive(bound, matches, visited);
-        }
-      }
+      case ARRAY ->
+          collectForbiddenMatchesRecursive(
+              ((ArrayType) typeMirror).getComponentType(), matches, visited);
+      case DECLARED -> collectFromDeclaredType((DeclaredType) typeMirror, matches, visited);
+      case ERROR -> collectFromErrorType((ErrorType) typeMirror, matches);
+      case TYPEVAR -> collectFromTypeVariable((TypeVariable) typeMirror, matches, visited);
+      case WILDCARD -> collectFromWildcardType((WildcardType) typeMirror, matches, visited);
+      case UNION -> collectFromMany(((UnionType) typeMirror).getAlternatives(), matches, visited);
+      case INTERSECTION ->
+          collectFromMany(((IntersectionType) typeMirror).getBounds(), matches, visited);
       default -> {
         // No-op for NONE, VOID, EXECUTABLE, PACKAGE, MODULE, etc.
+      }
+    }
+  }
+
+  private void collectFromDeclaredType(
+      DeclaredType declaredType, Set<String> matches, Set<TypeMirror> visited) {
+    collectTypeIfForbidden(declaredType.asElement(), matches);
+    collectFromMany(declaredType.getTypeArguments(), matches, visited);
+  }
+
+  private void collectFromErrorType(ErrorType errorType, Set<String> matches) {
+    collectTypeIfForbidden(errorType.asElement(), matches);
+  }
+
+  private void collectFromTypeVariable(
+      TypeVariable typeVariable, Set<String> matches, Set<TypeMirror> visited) {
+    collectForbiddenMatchesRecursive(typeVariable.getUpperBound(), matches, visited);
+    collectForbiddenMatchesRecursive(typeVariable.getLowerBound(), matches, visited);
+  }
+
+  private void collectFromWildcardType(
+      WildcardType wildcardType, Set<String> matches, Set<TypeMirror> visited) {
+    collectForbiddenMatchesRecursive(wildcardType.getExtendsBound(), matches, visited);
+    collectForbiddenMatchesRecursive(wildcardType.getSuperBound(), matches, visited);
+  }
+
+  private void collectFromMany(
+      List<? extends TypeMirror> mirrors, Set<String> matches, Set<TypeMirror> visited) {
+    for (TypeMirror mirror : mirrors) {
+      collectForbiddenMatchesRecursive(mirror, matches, visited);
+    }
+  }
+
+  private void collectTypeIfForbidden(Object element, Set<String> matches) {
+    if (element instanceof TypeElement typeElement) {
+      var qualifiedName = typeElement.getQualifiedName().toString();
+      if (forbiddenDeclaredTypes.contains(qualifiedName)) {
+        matches.add(qualifiedName);
       }
     }
   }

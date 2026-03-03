@@ -35,14 +35,7 @@ public final class BaselineStore {
         if (trimmed.isEmpty()) {
           continue;
         }
-
-        BaselineEntry entry;
-        try {
-          entry = mapper.readValue(trimmed, BaselineEntry.class);
-        } catch (IOException exception) {
-          throw new LinterException(
-              "Invalid baseline JSONL at " + baselinePath + ":" + lineNumber, exception);
-        }
+        var entry = parseEntry(trimmed, baselinePath, lineNumber);
 
         if (entry.findingId() == null || entry.findingId().isBlank()) {
           throw new LinterException(
@@ -101,5 +94,15 @@ public final class BaselineStore {
 
     entries.sort(Comparator.comparing(BaselineEntry::findingId));
     return List.copyOf(entries);
+  }
+
+  private BaselineEntry parseEntry(String jsonlLine, Path baselinePath, int lineNumber)
+      throws LinterException {
+    try {
+      return mapper.readValue(jsonlLine, BaselineEntry.class);
+    } catch (IOException exception) {
+      throw new LinterException(
+          "Invalid baseline JSONL at " + baselinePath + ":" + lineNumber, exception);
+    }
   }
 }

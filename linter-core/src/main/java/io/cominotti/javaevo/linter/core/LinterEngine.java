@@ -27,7 +27,7 @@ public final class LinterEngine {
     activeFindings.sort(Finding.ORDERING);
 
     List<BaselineEntry> baselineEntries =
-        config.baseline.enabled
+        config.baseline().enabled()
             ? baselineStore.readEntries(resolveBaselinePath(projectRoot, config))
             : List.of();
     var baselineIds = new HashSet<String>();
@@ -120,6 +120,6 @@ public final class LinterEngine {
   }
 
   private Path resolveBaselinePath(Path projectRoot, LinterConfig config) {
-    return LinterConfigLoader.normalizePath(projectRoot, Path.of(config.baseline.path));
+    return LinterConfigLoader.normalizePath(projectRoot, Path.of(config.baseline().path()));
   }
 }

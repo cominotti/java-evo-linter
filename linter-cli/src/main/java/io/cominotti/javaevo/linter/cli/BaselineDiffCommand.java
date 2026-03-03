@@ -29,16 +29,16 @@ public final class BaselineDiffCommand extends BaseCommand implements Callable<I
       var report = engine.diffBaseline(root, effectiveConfig);
 
       var humanReporter = new HumanReporter();
-      System.out.println(humanReporter.renderBaselineDiffReport(report));
+      out().println(humanReporter.renderBaselineDiffReport(report));
 
       var fail =
           !report.newFindings().isEmpty() || (failOnStale && !report.staleEntries().isEmpty());
       return fail ? 1 : 0;
     } catch (LinterException exception) {
-      System.err.println("java-evo-linter: " + exception.getMessage());
+      err().println("java-evo-linter: " + exception.getMessage());
       return 2;
     } catch (Exception exception) {
-      System.err.println("java-evo-linter: unexpected error: " + exception.getMessage());
+      err().println("java-evo-linter: unexpected error: " + exception.getMessage());
       return 2;
     }
   }
