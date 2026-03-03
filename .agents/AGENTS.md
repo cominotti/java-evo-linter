@@ -26,6 +26,7 @@ Sync directives:
 | File | Purpose |
 | --- | --- |
 | [`java-coding/SKILL.md`](./skills/java-coding/SKILL.md) | Mandatory Java coding skill and Java-specific workflow/quality guidance. |
+| [`learn/SKILL.md`](./skills/learn/SKILL.md) | Post-change learning workflow to keep agent docs, rules, skills, and memory artifacts current. |
 
 ## Mission
 
