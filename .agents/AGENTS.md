@@ -49,6 +49,11 @@ Sync directives:
   - SpotBugs
   - Error Prone + NullAway
 - Keep OpenRewrite `var` policy active and enforceable via `rewrite:dryRun`.
+- SonarCloud branch policy:
+  - Prefer SonarCloud Automatic Analysis for PR/branch scans.
+  - If Automatic Analysis is enabled, do not treat manual `sonar:sonar` runs as canonical.
+  - For branch remediation, query Sonar issues by PR scope (`pullRequest=<id>`) to avoid stale
+    `main` findings.
 
 ## Configuration and Policy Contracts
 
