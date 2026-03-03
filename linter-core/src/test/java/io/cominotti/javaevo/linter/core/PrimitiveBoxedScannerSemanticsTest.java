@@ -514,7 +514,7 @@ class PrimitiveBoxedScannerSemanticsTest {
     CheckReport report = runCheck(config);
 
     var ownerTypes = report.newFindings().stream().map(Finding::ownerType).toList();
-    Assertions.assertThat(ownerTypes.contains("FqcnOwner")).isFalse();
+    Assertions.assertThat(ownerTypes).doesNotContain("FqcnOwner");
   }
 
   private CheckReport runCheck(LinterConfig config) throws Exception {

@@ -127,7 +127,7 @@ public final class PrimitiveBoxedSignatureScanner {
 
   private void failOnCompileErrorsIfConfigured(DiagnosticCollector<JavaFileObject> diagnostics)
       throws LinterException {
-    if (!config.failOnCompileErrors()) {
+    if (!Boolean.TRUE.equals(config.failOnCompileErrors())) {
       return;
     }
 
@@ -655,7 +655,7 @@ public final class PrimitiveBoxedSignatureScanner {
     }
 
     private boolean isInlineSuppressed(ModifiersTree modifiersTree) {
-      if (!config.suppression().inlineEnabled()) {
+      if (!Boolean.TRUE.equals(config.suppression().inlineEnabled())) {
         return false;
       }
 
