@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+APP_HOME=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+JAR_PATH="$APP_HOME/lib/java-evo-linter-cli.jar"
+
+if [ ! -f "$JAR_PATH" ]; then
+  echo "java-evo-linter: missing runtime jar at $JAR_PATH" >&2
+  echo "Run the distribution build first or check your installation layout." >&2
+  exit 2
+fi
+
+if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+  JAVA_BIN="$JAVA_HOME/bin/java"
+elif command -v java >/dev/null 2>&1; then
+  JAVA_BIN="java"
+elif command -v mise >/dev/null 2>&1; then
+  exec mise exec -- java -jar "$JAR_PATH" "$@"
+else
+  echo "java-evo-linter: no Java runtime found." >&2
+  echo "Set JAVA_HOME to a JDK/JRE 21+ or add java to PATH." >&2
+  exit 2
+fi
+
+exec "$JAVA_BIN" -jar "$JAR_PATH" "$@"

@@ -1,0 +1,7 @@
+[tools]
+"asdf:maven" = "3.9.12"
+java = "25.0.2"
+
+[settings]
+fetch_remote_versions_timeout = "120s"
+http_timeout = "120s"

@@ -1,0 +1,64 @@
+sourceRoots = ["src/main/java"]
+includeGlobs = ["**/*.java"]
+excludeGlobs = ["**/generated/**"]
+
+forbiddenTypes = [
+  "boolean",
+  "byte",
+  "short",
+  "int",
+  "long",
+  "float",
+  "double",
+  "char",
+  "java.lang.Boolean",
+  "java.lang.Byte",
+  "java.lang.Short",
+  "java.lang.Integer",
+  "java.lang.Long",
+  "java.lang.Float",
+  "java.lang.Double",
+  "java.lang.Character",
+  "java.lang.String"
+]
+
+classpath = []
+failOnCompileErrors = true
+
+[visibility.fields]
+includePrivate = true
+includePackagePrivate = true
+
+[visibility.methods]
+includePrivate = true
+includePackagePrivate = true
+
+[[packageOverrides]]
+pattern = "com.acme.internal.**"
+
+[packageOverrides.fields]
+includePrivate = false
+includePackagePrivate = false
+
+[packageOverrides.methods]
+includePrivate = false
+includePackagePrivate = false
+
+[annotatedTypeExclusions]
+fieldLikeOwnerAnnotations = ["EnterpriseValueObject"]
+parameterOwnerAnnotations = ["EnterpriseValueObject"]
+
+[suppression]
+inlineEnabled = true
+keys = [
+  "primitive-boxed-signature",
+  "java-evo-linter:primitive-boxed-signature"
+]
+
+[baseline]
+enabled = true
+path = ".java-evo-linter-baseline.jsonl"
+
+[output]
+format = "both"
+jsonlPath = "build/java-evo-linter/findings.jsonl"

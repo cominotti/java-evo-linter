@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <Match>
+    <Bug pattern="PA_PUBLIC_PRIMITIVE_ATTRIBUTE"/>
+  </Match>
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+  </Match>
+  <Match>
+    <Bug pattern="UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"/>
+  </Match>
+  <Match>
+    <Source name="~.*/target/generated-sources/.*"/>
+  </Match>
+</FindBugsFilter>

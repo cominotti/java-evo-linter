@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="java-evo-linter-rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.github.io/schema/ruleset_2_0_0.xsd">
+  <description>High-signal PMD rules for java-evo-linter.</description>
+
+  <rule ref="category/java/errorprone.xml/AssignmentInOperand"/>
+  <rule ref="category/java/errorprone.xml/AvoidDecimalLiteralsInBigDecimalConstructor"/>
+  <rule ref="category/java/errorprone.xml/CompareObjectsWithEquals"/>
+  <rule ref="category/java/errorprone.xml/DoNotCallGarbageCollectionExplicitly"/>
+  <rule ref="category/java/errorprone.xml/ReturnEmptyCollectionRatherThanNull"/>
+  <rule ref="category/java/errorprone.xml/UseCorrectExceptionLogging"/>
+
+  <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+  <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
+</ruleset>
