@@ -65,23 +65,24 @@ abstract class AbstractLinterMojo extends AbstractMojo {
       var loader = new LinterConfigLoader();
       var base = loader.load(configPath, root);
 
-      var overrides = new LinterConfigOverrides();
-      overrides.baselinePath = baselineFile == null ? null : baselineFile.toPath();
-      overrides.sourceRoots = toPathList(mavenProject.getCompileSourceRoots());
-      overrides.classpathEntries =
-          mavenProject.getCompileClasspathElements().stream().map(Path::of).toList();
+      var overrides =
+          new LinterConfigOverrides()
+              .withBaselinePath(baselineFile == null ? null : baselineFile.toPath())
+              .withSourceRoots(toPathList(mavenProject.getCompileSourceRoots()))
+              .withClasspathEntries(
+                  mavenProject.getCompileClasspathElements().stream().map(Path::of).toList());
 
       if (disablePrivate || disablePrivateFields) {
-        overrides.includePrivateFields = false;
+        overrides = overrides.withIncludePrivateFields(Boolean.FALSE);
       }
       if (disablePackagePrivate || disablePackagePrivateFields) {
-        overrides.includePackagePrivateFields = false;
+        overrides = overrides.withIncludePackagePrivateFields(Boolean.FALSE);
       }
       if (disablePrivate || disablePrivateMethods) {
-        overrides.includePrivateMethods = false;
+        overrides = overrides.withIncludePrivateMethods(Boolean.FALSE);
       }
       if (disablePackagePrivate || disablePackagePrivateMethods) {
-        overrides.includePackagePrivateMethods = false;
+        overrides = overrides.withIncludePackagePrivateMethods(Boolean.FALSE);
       }
 
       return loader.applyOverrides(base, overrides, root);

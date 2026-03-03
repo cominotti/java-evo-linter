@@ -15,38 +15,42 @@ public final class VisibilityResolver {
   }
 
   public boolean shouldCheckField(String packageName, Visibility visibility) {
-    var effective = visibilitySettings.fields.copy();
-    applyOverrides(packageName, effective, true);
+    var effective = applyOverrides(packageName, visibilitySettings.fields(), true);
     return effective.shouldCheck(visibility);
   }
 
   public boolean shouldCheckMethod(String packageName, Visibility visibility) {
-    var effective = visibilitySettings.methods.copy();
-    applyOverrides(packageName, effective, false);
+    var effective = applyOverrides(packageName, visibilitySettings.methods(), false);
     return effective.shouldCheck(visibility);
   }
 
-  private void applyOverrides(String packageName, VisibilityPolicy effective, boolean fieldPolicy) {
+  private VisibilityPolicy applyOverrides(
+      String packageName, VisibilityPolicy basePolicy, boolean fieldPolicy) {
     if (packageOverrides == null || packageOverrides.isEmpty()) {
-      return;
+      return basePolicy;
     }
 
+    var effective = basePolicy;
     for (PackageVisibilityOverride packageOverride : packageOverrides) {
-      if (packageOverride == null
-          || packageOverride.pattern == null
-          || packageOverride.pattern.isBlank()) {
-        continue;
-      }
-
-      if (!PackagePatternMatcher.matches(packageOverride.pattern, packageName)) {
-        continue;
-      }
-
-      VisibilityPolicyOverride overridePolicy =
-          fieldPolicy ? packageOverride.fields : packageOverride.methods;
-      if (overridePolicy != null) {
-        overridePolicy.applyTo(effective);
+      if (matchesPackageOverride(packageOverride, packageName)) {
+        VisibilityPolicyOverride overridePolicy =
+            fieldPolicy ? packageOverride.fields() : packageOverride.methods();
+        if (overridePolicy != null) {
+          effective = overridePolicy.applyTo(effective);
+        }
       }
     }
+    return effective;
+  }
+
+  private boolean matchesPackageOverride(
+      PackageVisibilityOverride packageOverride, String packageName) {
+    if (packageOverride == null) {
+      return false;
+    }
+    var pattern = packageOverride.pattern();
+    return pattern != null
+        && !pattern.isBlank()
+        && PackagePatternMatcher.matches(pattern, packageName);
   }
 }

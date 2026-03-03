@@ -4,11 +4,13 @@ package io.cominotti.javaevo.linter.cli;
 
 import io.cominotti.javaevo.linter.core.HumanReporter;
 import io.cominotti.javaevo.linter.core.JsonlReporter;
+import io.cominotti.javaevo.linter.core.LinterConfig;
 import io.cominotti.javaevo.linter.core.LinterConfigLoader;
 import io.cominotti.javaevo.linter.core.LinterConfigOverrides;
 import io.cominotti.javaevo.linter.core.LinterEngine;
 import io.cominotti.javaevo.linter.core.LinterException;
 import io.cominotti.javaevo.linter.core.OutputFormat;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
 import org.jspecify.annotations.Nullable;
@@ -32,61 +34,56 @@ public final class CheckCommand extends BaseCommand implements Callable<Integer>
   @Override
   public Integer call() {
     try {
-      var root = normalizedProjectRoot();
-
-      var configLoader = new LinterConfigLoader();
-      var config = configLoader.load(configPath, root);
-
-      var overrides = new LinterConfigOverrides();
-      overrides.baselinePath = baselinePath;
-      overrides.outputFormat = outputFormat;
-      overrides.jsonlPath = jsonlPath;
-      overrides.sourceRoots = sourceRoots;
-      overrides.classpathEntries = classpathEntries;
-
-      if (disablePrivate || disablePrivateFields) {
-        overrides.includePrivateFields = false;
-      }
-      if (disablePackagePrivate || disablePackagePrivateFields) {
-        overrides.includePackagePrivateFields = false;
-      }
-      if (disablePrivate || disablePrivateMethods) {
-        overrides.includePrivateMethods = false;
-      }
-      if (disablePackagePrivate || disablePackagePrivateMethods) {
-        overrides.includePackagePrivateMethods = false;
-      }
-
-      var effectiveConfig = configLoader.applyOverrides(config, overrides, root);
-
-      var engine = new LinterEngine();
-      var report = engine.check(root, effectiveConfig);
-
-      var humanReporter = new HumanReporter();
-      var jsonlReporter = new JsonlReporter();
-
-      if (effectiveConfig.output.format == OutputFormat.HUMAN
-          || effectiveConfig.output.format == OutputFormat.BOTH) {
-        System.out.println(humanReporter.renderCheckReport(report));
-      }
-
-      if (effectiveConfig.output.format == OutputFormat.JSONL
-          || effectiveConfig.output.format == OutputFormat.BOTH) {
-        Path outputPath =
-            LinterConfigLoader.normalizePath(root, Path.of(effectiveConfig.output.jsonlPath));
-        jsonlReporter.writeToPath(outputPath, report.newFindings());
-        if (effectiveConfig.output.format == OutputFormat.BOTH) {
-          System.out.println("\nJSONL report written to " + outputPath);
-        }
-      }
-
-      return report.newFindings().isEmpty() ? 0 : 1;
+      return runCheck();
     } catch (LinterException exception) {
-      System.err.println("java-evo-linter: " + exception.getMessage());
+      err().println("java-evo-linter: " + exception.getMessage());
+      return 2;
+    } catch (IOException exception) {
+      err().println("java-evo-linter: " + exception.getMessage());
       return 2;
     } catch (Exception exception) {
-      System.err.println("java-evo-linter: unexpected error: " + exception.getMessage());
+      err().println("java-evo-linter: unexpected error: " + exception.getMessage());
       return 2;
+    }
+  }
+
+  private Integer runCheck() throws LinterException, IOException {
+    var root = normalizedProjectRoot();
+    var effectiveConfig = applyOutputOverrides(loadEffectiveConfig(), root);
+    var report = new LinterEngine().check(root, effectiveConfig);
+
+    renderHumanReport(effectiveConfig.output().format(), report);
+    renderJsonlReport(
+        effectiveConfig.output().format(), effectiveConfig.output().jsonlPath(), root, report);
+    return report.newFindings().isEmpty() ? 0 : 1;
+  }
+
+  private LinterConfig applyOutputOverrides(LinterConfig baseConfig, Path projectRoot) {
+    var overrides =
+        new LinterConfigOverrides().withOutputFormat(outputFormat).withJsonlPath(jsonlPath);
+    return new LinterConfigLoader().applyOverrides(baseConfig, overrides, projectRoot);
+  }
+
+  private void renderHumanReport(
+      OutputFormat format, io.cominotti.javaevo.linter.core.CheckReport report) {
+    if (format == OutputFormat.HUMAN || format == OutputFormat.BOTH) {
+      out().println(new HumanReporter().renderCheckReport(report));
+    }
+  }
+
+  private void renderJsonlReport(
+      OutputFormat format,
+      String jsonlPathValue,
+      Path projectRoot,
+      io.cominotti.javaevo.linter.core.CheckReport report)
+      throws LinterException {
+    if (format != OutputFormat.JSONL && format != OutputFormat.BOTH) {
+      return;
+    }
+    var outputPath = LinterConfigLoader.normalizePath(projectRoot, Path.of(jsonlPathValue));
+    new JsonlReporter().writeToPath(outputPath, report.newFindings());
+    if (format == OutputFormat.BOTH) {
+      out().println("\nJSONL report written to " + outputPath);
     }
   }
 }

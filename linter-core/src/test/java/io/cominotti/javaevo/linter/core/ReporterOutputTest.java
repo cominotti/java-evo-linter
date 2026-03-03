@@ -2,14 +2,13 @@
 
 package io.cominotti.javaevo.linter.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -32,11 +31,12 @@ class ReporterOutputTest {
 
     String output = new HumanReporter().renderCheckReport(report);
 
-    assertThat(output).contains("New findings");
-    assertThat(output).contains("Summary");
-    assertThat(output).contains("Raw findings: 1");
-    assertThat(output).contains("Stale baseline entries");
-    assertThat(output).contains("stale-id");
+    Assertions.assertThat(output)
+        .contains("New findings")
+        .contains("Summary")
+        .contains("Raw findings: 1")
+        .contains("Stale baseline entries")
+        .contains("stale-id");
   }
 
   @Test
@@ -48,17 +48,18 @@ class ReporterOutputTest {
     reporter.writeToStream(outputStream, List.of(finding));
 
     String line = outputStream.toString(StandardCharsets.UTF_8).trim();
-    assertThat(line).isNotBlank();
+    Assertions.assertThat(line).isNotBlank();
 
     ObjectMapper mapper = new ObjectMapper();
     var node = mapper.readTree(line);
-    assertThat(node.get("rule_id").asText()).isEqualTo(RuleIds.PRIMITIVE_BOXED_SIGNATURE);
-    assertThat(node.get("finding_id").asText()).isEqualTo("id-2");
+    Assertions.assertThat(node.get("rule_id").asText())
+        .isEqualTo(RuleIds.PRIMITIVE_BOXED_SIGNATURE);
+    Assertions.assertThat(node.get("finding_id").asText()).isEqualTo("id-2");
 
     Path jsonlFile = tempDir.resolve("reports/findings.jsonl");
     reporter.writeToPath(jsonlFile, List.of(finding));
-    assertThat(Files.exists(jsonlFile)).isTrue();
-    assertThat(Files.readAllLines(jsonlFile)).hasSize(1);
+    Assertions.assertThat(Files.exists(jsonlFile)).isTrue();
+    Assertions.assertThat(Files.readAllLines(jsonlFile)).hasSize(1);
   }
 
   private Finding finding(String id, String file, int line) {

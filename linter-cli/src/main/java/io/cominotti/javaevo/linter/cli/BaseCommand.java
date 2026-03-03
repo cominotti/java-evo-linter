@@ -5,13 +5,19 @@ package io.cominotti.javaevo.linter.cli;
 import io.cominotti.javaevo.linter.core.LinterConfig;
 import io.cominotti.javaevo.linter.core.LinterConfigLoader;
 import io.cominotti.javaevo.linter.core.LinterConfigOverrides;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Spec;
 
 abstract class BaseCommand {
+  @Spec private @Nullable CommandSpec spec;
+
   @Option(
       names = {"-c", "--config"},
       description = "Path to config TOML")
@@ -71,27 +77,43 @@ abstract class BaseCommand {
     return projectRoot.toAbsolutePath().normalize();
   }
 
-  protected LinterConfig loadEffectiveConfig() throws Exception {
+  protected PrintWriter out() {
+    return commandSpec().commandLine().getOut();
+  }
+
+  protected PrintWriter err() {
+    return commandSpec().commandLine().getErr();
+  }
+
+  private CommandSpec commandSpec() {
+    if (spec == null) {
+      throw new IllegalStateException("Command spec is unavailable before picocli initialization");
+    }
+    return spec;
+  }
+
+  protected LinterConfig loadEffectiveConfig() throws IOException {
     var root = normalizedProjectRoot();
     var configLoader = new LinterConfigLoader();
     var config = configLoader.load(configPath, root);
 
-    var overrides = new LinterConfigOverrides();
-    overrides.baselinePath = baselinePath;
-    overrides.sourceRoots = sourceRoots;
-    overrides.classpathEntries = classpathEntries;
+    var overrides =
+        new LinterConfigOverrides()
+            .withBaselinePath(baselinePath)
+            .withSourceRoots(sourceRoots)
+            .withClasspathEntries(classpathEntries);
 
     if (disablePrivate || disablePrivateFields) {
-      overrides.includePrivateFields = false;
+      overrides = overrides.withIncludePrivateFields(Boolean.FALSE);
     }
     if (disablePackagePrivate || disablePackagePrivateFields) {
-      overrides.includePackagePrivateFields = false;
+      overrides = overrides.withIncludePackagePrivateFields(Boolean.FALSE);
     }
     if (disablePrivate || disablePrivateMethods) {
-      overrides.includePrivateMethods = false;
+      overrides = overrides.withIncludePrivateMethods(Boolean.FALSE);
     }
     if (disablePackagePrivate || disablePackagePrivateMethods) {
-      overrides.includePackagePrivateMethods = false;
+      overrides = overrides.withIncludePackagePrivateMethods(Boolean.FALSE);
     }
 
     return configLoader.applyOverrides(config, overrides, root);

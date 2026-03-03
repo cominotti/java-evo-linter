@@ -2,16 +2,16 @@
 
 package io.cominotti.javaevo.linter.cli;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
@@ -26,11 +26,11 @@ class MainCommandIntegrationTest {
     CommandResult result =
         runCommand("check", "--project-root", tempDir.toString(), "--format", "human");
 
-    assertThat(result.exitCode()).isEqualTo(1);
-    assertThat(result.stdout()).contains("New findings");
-    assertThat(result.stdout()).contains("[primitive-boxed-signature]");
-    assertThat(result.stdout()).contains("New findings: 3");
-    assertThat(result.stderr()).isBlank();
+    Assertions.assertThat(result.exitCode()).isEqualTo(1);
+    Assertions.assertThat(result.stdout()).contains("New findings");
+    Assertions.assertThat(result.stdout()).contains("[primitive-boxed-signature]");
+    Assertions.assertThat(result.stdout()).contains("New findings: 3");
+    Assertions.assertThat(result.stderr()).isBlank();
   }
 
   @Test
@@ -48,10 +48,10 @@ class MainCommandIntegrationTest {
             "--jsonl-path",
             jsonl.toString());
 
-    assertThat(result.exitCode()).isEqualTo(1);
-    assertThat(result.stdout()).doesNotContain("New findings");
-    assertThat(Files.exists(jsonl)).isTrue();
-    assertThat(Files.readAllLines(jsonl)).hasSize(3);
+    Assertions.assertThat(result.exitCode()).isEqualTo(1);
+    Assertions.assertThat(result.stdout()).doesNotContain("New findings");
+    Assertions.assertThat(Files.exists(jsonl)).isTrue();
+    Assertions.assertThat(Files.readAllLines(jsonl)).hasSize(3);
   }
 
   @Test
@@ -78,8 +78,8 @@ class MainCommandIntegrationTest {
             "human",
             "--disable-private");
 
-    assertThat(extractNewFindingsCount(defaultResult.stdout())).isEqualTo(2);
-    assertThat(extractNewFindingsCount(disabledResult.stdout())).isEqualTo(1);
+    Assertions.assertThat(extractNewFindingsCount(defaultResult.stdout())).isEqualTo(2);
+    Assertions.assertThat(extractNewFindingsCount(disabledResult.stdout())).isEqualTo(1);
   }
 
   @Test
@@ -93,8 +93,8 @@ class MainCommandIntegrationTest {
             "--project-root", tempDir.toString(),
             "--baseline", baselinePath.toString());
 
-    assertThat(generated.exitCode()).isZero();
-    assertThat(Files.exists(baselinePath)).isTrue();
+    Assertions.assertThat(generated.exitCode()).isZero();
+    Assertions.assertThat(Files.exists(baselinePath)).isTrue();
 
     CommandResult checked =
         runCommand(
@@ -106,8 +106,8 @@ class MainCommandIntegrationTest {
             "--format",
             "human");
 
-    assertThat(checked.exitCode()).isZero();
-    assertThat(checked.stdout()).contains("New findings: 0");
+    Assertions.assertThat(checked.exitCode()).isZero();
+    Assertions.assertThat(checked.stdout()).contains("New findings: 0");
   }
 
   @Test
@@ -120,7 +120,7 @@ class MainCommandIntegrationTest {
             "baseline", "generate",
             "--project-root", tempDir.toString(),
             "--baseline", baselinePath.toString());
-    assertThat(generated.exitCode()).isZero();
+    Assertions.assertThat(generated.exitCode()).isZero();
 
     writeSource(
         """
@@ -144,8 +144,8 @@ class MainCommandIntegrationTest {
             baselinePath.toString(),
             "--fail-on-stale");
 
-    assertThat(diffResult.exitCode()).isEqualTo(1);
-    assertThat(diffResult.stdout()).contains("Stale baseline entries");
+    Assertions.assertThat(diffResult.exitCode()).isEqualTo(1);
+    Assertions.assertThat(diffResult.stdout()).contains("Stale baseline entries");
   }
 
   @Test
@@ -160,8 +160,8 @@ class MainCommandIntegrationTest {
             "--config",
             tempDir.resolve("missing.toml").toString());
 
-    assertThat(result.exitCode()).isEqualTo(2);
-    assertThat(result.stderr()).contains("Config file not found");
+    Assertions.assertThat(result.exitCode()).isEqualTo(2);
+    Assertions.assertThat(result.stderr()).contains("Config file not found");
   }
 
   private void writeSource(String source) throws IOException {
@@ -187,28 +187,25 @@ class MainCommandIntegrationTest {
   private CommandResult runCommand(String... args) {
     ByteArrayOutputStream stdoutBuffer = new ByteArrayOutputStream();
     ByteArrayOutputStream stderrBuffer = new ByteArrayOutputStream();
-
-    PrintStream originalOut = System.out;
-    PrintStream originalErr = System.err;
-
-    try {
-      System.setOut(new PrintStream(stdoutBuffer, true, StandardCharsets.UTF_8));
-      System.setErr(new PrintStream(stderrBuffer, true, StandardCharsets.UTF_8));
-
-      int exitCode = new CommandLine(new Main()).execute(args);
-      return new CommandResult(
-          exitCode,
-          stdoutBuffer.toString(StandardCharsets.UTF_8),
-          stderrBuffer.toString(StandardCharsets.UTF_8));
-    } finally {
-      System.setOut(originalOut);
-      System.setErr(originalErr);
-    }
+    var commandLine = new CommandLine(new Main());
+    var stdout =
+        new PrintWriter(new OutputStreamWriter(stdoutBuffer, StandardCharsets.UTF_8), true);
+    var stderr =
+        new PrintWriter(new OutputStreamWriter(stderrBuffer, StandardCharsets.UTF_8), true);
+    commandLine.setOut(stdout);
+    commandLine.setErr(stderr);
+    var exitCode = commandLine.execute(args);
+    stdout.flush();
+    stderr.flush();
+    return new CommandResult(
+        exitCode,
+        stdoutBuffer.toString(StandardCharsets.UTF_8),
+        stderrBuffer.toString(StandardCharsets.UTF_8));
   }
 
   private int extractNewFindingsCount(String output) {
     Matcher matcher = Pattern.compile("New findings: (\\d+)").matcher(output);
-    assertThat(matcher.find()).isTrue();
+    Assertions.assertThat(matcher.find()).isTrue();
     return Integer.parseInt(matcher.group(1));
   }
 

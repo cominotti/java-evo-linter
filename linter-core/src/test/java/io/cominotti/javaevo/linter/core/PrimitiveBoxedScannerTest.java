@@ -2,12 +2,11 @@
 
 package io.cominotti.javaevo.linter.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -18,23 +17,22 @@ class PrimitiveBoxedScannerTest {
   void reportsForbiddenTypesInFieldsAndSignatures() throws Exception {
     writeSource(defaultSource());
 
-    LinterConfig config = new LinterConfig();
-    config.baseline.enabled = false;
+    var config = new LinterConfig().withBaseline(new BaselineSettings(Boolean.FALSE, null));
 
     CheckReport report = new LinterEngine().check(tempDir, config);
 
-    assertThat(report.newFindings()).hasSize(5);
-    assertThat(report.activeFindings()).hasSize(5);
-    assertThat(report.rawFindingCount()).isEqualTo(6);
-    assertThat(report.inlineSuppressedCount()).isEqualTo(1);
-    assertThat(report.baselineSuppressedCount()).isZero();
+    Assertions.assertThat(report.newFindings()).hasSize(5);
+    Assertions.assertThat(report.activeFindings()).hasSize(5);
+    Assertions.assertThat(report.rawFindingCount()).isEqualTo(6);
+    Assertions.assertThat(report.inlineSuppressedCount()).isEqualTo(1);
+    Assertions.assertThat(report.baselineSuppressedCount()).isZero();
 
-    assertThat(report.newFindings())
+    Assertions.assertThat(report.newFindings())
         .extracting(Finding::forbiddenType)
         .contains("int", "java.lang.Integer", "java.lang.String")
         .doesNotContain("java.lang.Long");
 
-    assertThat(report.newFindings())
+    Assertions.assertThat(report.newFindings())
         .extracting(Finding::violationRole)
         .contains("field_type", "method_return_type", "method_parameter_type");
   }
@@ -43,32 +41,30 @@ class PrimitiveBoxedScannerTest {
   void appliesGlobalVisibilityDisablesAndPackageOverrides() throws Exception {
     writeSource(defaultSource());
 
-    LinterConfig config = new LinterConfig();
-    config.baseline.enabled = false;
-    config.visibility.fields.includePrivate = false;
-    config.visibility.methods.includePrivate = false;
+    var config =
+        new LinterConfig()
+            .withBaseline(new BaselineSettings(Boolean.FALSE, null))
+            .withVisibility(
+                new VisibilitySettings(
+                    new VisibilityPolicy(Boolean.FALSE, Boolean.TRUE),
+                    new VisibilityPolicy(Boolean.FALSE, Boolean.TRUE)));
 
     CheckReport withoutOverride = new LinterEngine().check(tempDir, config);
-    assertThat(withoutOverride.newFindings()).hasSize(4);
-    assertThat(withoutOverride.rawFindingCount()).isEqualTo(4);
+    Assertions.assertThat(withoutOverride.newFindings()).hasSize(4);
+    Assertions.assertThat(withoutOverride.rawFindingCount()).isEqualTo(4);
 
-    PackageVisibilityOverride packageOverride = new PackageVisibilityOverride();
-    packageOverride.pattern = "com.acme.**";
+    var packageOverride =
+        new PackageVisibilityOverride(
+            "com.acme.**",
+            new VisibilityPolicyOverride(Boolean.TRUE, null),
+            new VisibilityPolicyOverride(Boolean.TRUE, null));
 
-    VisibilityPolicyOverride fields = new VisibilityPolicyOverride();
-    fields.includePrivate = true;
-    packageOverride.fields = fields;
-
-    VisibilityPolicyOverride methods = new VisibilityPolicyOverride();
-    methods.includePrivate = true;
-    packageOverride.methods = methods;
-
-    config.packageOverrides = List.of(packageOverride);
+    config = config.withPackageOverrides(List.of(packageOverride));
 
     CheckReport withOverride = new LinterEngine().check(tempDir, config);
-    assertThat(withOverride.newFindings()).hasSize(5);
-    assertThat(withOverride.rawFindingCount()).isEqualTo(6);
-    assertThat(withOverride.inlineSuppressedCount()).isEqualTo(1);
+    Assertions.assertThat(withOverride.newFindings()).hasSize(5);
+    Assertions.assertThat(withOverride.rawFindingCount()).isEqualTo(6);
+    Assertions.assertThat(withOverride.inlineSuppressedCount()).isEqualTo(1);
   }
 
   private void writeSource(String source) throws IOException {

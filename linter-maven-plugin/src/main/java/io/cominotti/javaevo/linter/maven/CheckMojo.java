@@ -49,7 +49,7 @@ public final class CheckMojo extends AbstractLinterMojo {
       var jsonlReporter = new JsonlReporter();
       File effectiveJsonlPath =
           jsonlPath == null
-              ? projectRoot().resolve(effectiveConfig.output.jsonlPath).toFile()
+              ? projectRoot().resolve(effectiveConfig.output().jsonlPath()).toFile()
               : jsonlPath;
       jsonlReporter.writeToPath(effectiveJsonlPath.toPath(), report.newFindings());
       getLog().info("JSONL report written to " + effectiveJsonlPath);

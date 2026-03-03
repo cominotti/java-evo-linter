@@ -2,14 +2,23 @@
 
 package io.cominotti.javaevo.linter.core;
 
-public final class OutputSettings {
-  public OutputFormat format = OutputFormat.BOTH;
-  public String jsonlPath = ".java-evo-linter-findings.jsonl";
+public record OutputSettings(OutputFormat format, String jsonlPath) {
+  private static final String DEFAULT_JSONL_PATH = ".java-evo-linter-findings.jsonl";
 
-  public OutputSettings copy() {
-    var copy = new OutputSettings();
-    copy.format = format;
-    copy.jsonlPath = jsonlPath;
-    return copy;
+  public OutputSettings {
+    format = format == null ? OutputFormat.BOTH : format;
+    jsonlPath = jsonlPath == null || jsonlPath.isBlank() ? DEFAULT_JSONL_PATH : jsonlPath;
+  }
+
+  public OutputSettings() {
+    this(OutputFormat.BOTH, DEFAULT_JSONL_PATH);
+  }
+
+  public OutputSettings withFormat(OutputFormat value) {
+    return new OutputSettings(value, jsonlPath);
+  }
+
+  public OutputSettings withJsonlPath(String value) {
+    return new OutputSettings(format, value);
   }
 }
