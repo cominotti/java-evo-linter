@@ -4,20 +4,32 @@
 
 ## Compatibility
 
-- Runtime: Java 25+
-- Compiled with `--release 25`
+- Runtime: Java 21+
+- Compiled with `--release 21`
 - Linting uses the host JDK compiler level
-- Java 21 projects are supported (for example, Maven projects with `maven.compiler.release=21` running on JDK 25)
-- Maven plugin and CLI are both available
+- CI verifies the reactor on JDK 21 and keeps a compatibility lane on JDK 25
+- Maven plugin, embeddable library, and CLI are all published under `dev.cominotti.java.evo`
+
+## Distribution
+
+- Maven Central artifacts:
+  `dev.cominotti.java.evo:linter-core`,
+  `dev.cominotti.java.evo:linter-maven-plugin`, and
+  `dev.cominotti.java.evo:linter-cli`
+- GitHub Releases remain the primary human-facing CLI install path via the ZIP and `tar.gz`
+  archives built from `linter-cli`
+- Central publishing and release expectations are documented in
+  [`docs/release/maven-central.md`](docs/release/maven-central.md)
 
 ## CI
 
-GitHub Actions workflow: `.github/workflows/ci.yml`
+GitHub Actions workflows: `.github/workflows/ci.yml` and `.github/workflows/release.yml`
 
-- Build and test on Temurin JDK 25
+- Build and test on Temurin JDK 21, with a compatibility verify lane on JDK 25
 - Enforces Apache-2.0 SPDX headers via Maven `validate` (with optional `make` wrappers)
 - Builds and uploads CLI distribution archives (`zip` and `tar.gz`)
-- Builds a standalone Maven consumer example targeting `--release 21` while running on JDK 25
+- Verifies both example consumers on JDK 21 using the Central-style coordinates
+- Publishes signed artifacts to Maven Central and attaches CLI archives to GitHub Releases on tag pushes
 
 ## Linting
 
@@ -86,6 +98,7 @@ Run example consumer verification:
 ```bash
 mise exec -- mvn -B -ntp -pl linter-core,linter-cli,linter-maven-plugin -am install
 mise exec -- mvn -B -ntp -f examples/maven-plugin-consumer/pom.xml verify
+mise exec -- mvn -B -ntp -f examples/library-consumer/pom.xml test
 ```
 
 Run the large-tree scanner benchmark (manual):
@@ -119,7 +132,7 @@ Detection surfaces:
 
 Default owner-annotation exclusions:
 
-- Field types, record components, and method/constructor parameters are skipped when the owner type is annotated with `@EnterpriseValueObject`
+- Field types, record components, and method/constructor parameters are skipped when the owner type is annotated with `@EvoType`
 - Method return types are still checked
 - Matching is name-based (no dependency on a specific annotation library)
 
@@ -246,24 +259,24 @@ final class ClassParameterValid {
 
 Valid message: This is valid because the parameter is modeled as a domain type (`DiscountRate`).
 
-##### Rule: `@EnterpriseValueObject` owner exclusions (classes)
+##### Rule: `@EvoType` owner exclusions (classes)
 
 Associated flags/configs:
 
 - `[annotatedTypeExclusions].fieldLikeOwnerAnnotations`
 - `[annotatedTypeExclusions].parameterOwnerAnnotations`
-- `fieldLikeOwnerAnnotations = ["EnterpriseValueObject"]` (default)
-- `parameterOwnerAnnotations = ["EnterpriseValueObject"]` (default)
+- `fieldLikeOwnerAnnotations = ["EvoType"]` (default)
+- `parameterOwnerAnnotations = ["EvoType"]` (default)
 
 Valid example:
 
 ```java
 package com.acme;
 
-@interface EnterpriseValueObject {}
+@interface EvoType {}
 record Price(java.math.BigDecimal value) {}
 
-@EnterpriseValueObject
+@EvoType
 final class ClassOwnerExcludedValid {
     int legacyCents;
 
@@ -283,9 +296,9 @@ Invalid example:
 ```java
 package com.acme;
 
-@interface EnterpriseValueObject {}
+@interface EvoType {}
 
-@EnterpriseValueObject
+@EvoType
 final class ClassOwnerExcludedInvalid {
     int legacyCents;
 
@@ -442,24 +455,24 @@ record RecordFieldValid(java.util.UUID id) {
 
 Valid message: This is valid because the static field uses a domain type (`CounterValue`) instead of a forbidden scalar.
 
-##### Rule: `@EnterpriseValueObject` owner exclusions (records)
+##### Rule: `@EvoType` owner exclusions (records)
 
 Associated flags/configs:
 
 - `[annotatedTypeExclusions].fieldLikeOwnerAnnotations`
 - `[annotatedTypeExclusions].parameterOwnerAnnotations`
-- `fieldLikeOwnerAnnotations = ["EnterpriseValueObject"]` (default)
-- `parameterOwnerAnnotations = ["EnterpriseValueObject"]` (default)
+- `fieldLikeOwnerAnnotations = ["EvoType"]` (default)
+- `parameterOwnerAnnotations = ["EvoType"]` (default)
 
 Valid example:
 
 ```java
 package com.acme;
 
-@interface EnterpriseValueObject {}
+@interface EvoType {}
 record SnapshotId(java.util.UUID value) {}
 
-@EnterpriseValueObject
+@EvoType
 record RecordOwnerExcludedValid(Integer version) {
     SnapshotId id(SnapshotId fallback) {
         return fallback;
@@ -474,9 +487,9 @@ Invalid example:
 ```java
 package com.acme;
 
-@interface EnterpriseValueObject {}
+@interface EvoType {}
 
-@EnterpriseValueObject
+@EvoType
 record RecordOwnerExcludedInvalid(Integer version) {
     String label() {
         return "legacy";
@@ -586,15 +599,33 @@ mvn -B -ntp -f examples/maven-plugin-consumer/pom.xml verify
 
 The example runs `linter-maven-plugin:check` in its `verify` phase.
 
+## Library Consumer Example
+
+See [`examples/library-consumer`](examples/library-consumer).
+
+From repository root:
+
+```bash
+mvn -B -ntp -pl linter-core,linter-cli,linter-maven-plugin -am install
+mvn -B -ntp -f examples/library-consumer/pom.xml test
+```
+
+The smoke test imports `dev.cominotti.java.evo:linter-core` and runs `LinterEngine`
+programmatically against a temporary Java 21 source tree.
+
 ## Maven Plugin Usage
 
-Install plugin (artifact currently from this multi-module build):
+Install the plugin from Maven Central with your chosen released version:
 
 ```xml
+<properties>
+  <javaEvoLinterVersion>0.1.0</javaEvoLinterVersion>
+</properties>
+
 <plugin>
-  <groupId>io.cominotti.javaevo</groupId>
+  <groupId>dev.cominotti.java.evo</groupId>
   <artifactId>linter-maven-plugin</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>${javaEvoLinterVersion}</version>
   <executions>
     <execution>
       <goals>
@@ -604,6 +635,22 @@ Install plugin (artifact currently from this multi-module build):
   </executions>
 </plugin>
 ```
+
+For repo-local verification before the first release, the examples pin
+`java.evo.linter.version=0.1.0-SNAPSHOT` and rely on a preceding `mvn install`.
+
+## Embeddable Library Usage
+
+```xml
+<dependency>
+  <groupId>dev.cominotti.java.evo</groupId>
+  <artifactId>linter-core</artifactId>
+  <version>${javaEvoLinterVersion}</version>
+</dependency>
+```
+
+`LinterEngine` is the supported entry point for programmatic use, and the example in
+[`examples/library-consumer`](examples/library-consumer) shows a complete smoke test.
 
 Goals:
 
@@ -651,8 +698,8 @@ includePrivate = false
 includePackagePrivate = false
 
 [annotatedTypeExclusions]
-fieldLikeOwnerAnnotations = ["EnterpriseValueObject"]
-parameterOwnerAnnotations = ["EnterpriseValueObject"]
+fieldLikeOwnerAnnotations = ["EvoType"]
+parameterOwnerAnnotations = ["EvoType"]
 
 [suppression]
 inlineEnabled = true

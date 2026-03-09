@@ -45,8 +45,8 @@ includePrivate = false
 includePackagePrivate = false
 
 [annotatedTypeExclusions]
-fieldLikeOwnerAnnotations = ["EnterpriseValueObject"]
-parameterOwnerAnnotations = ["EnterpriseValueObject"]
+fieldLikeOwnerAnnotations = ["EvoType"]
+parameterOwnerAnnotations = ["EvoType"]
 
 [suppression]
 inlineEnabled = true

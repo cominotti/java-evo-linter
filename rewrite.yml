@@ -1,5 +1,5 @@
 type: specs.openrewrite.org/v1beta/recipe
-name: io.cominotti.javaevo.UseVarPolicy
+name: dev.cominotti.java.evo.UseVarPolicy
 displayName: Prefer local variable type inference
 description: Use Java local variable type inference where the type remains clear.
 recipeList:

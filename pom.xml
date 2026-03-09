@@ -3,13 +3,37 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.cominotti.javaevo</groupId>
+  <groupId>dev.cominotti.java.evo</groupId>
   <artifactId>java-evo-linter-parent</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>java-evo-linter</name>
-  <description>Primitive and boxed signature linter for Java 21+ codebases (runtime Java 25+)</description>
+  <description>Primitive and boxed/JDK scalar signature linter for Java 21+ codebases</description>
+  <url>https://github.com/cominotti/java-evo-linter</url>
+
+  <licenses>
+    <license>
+      <name>Apache License 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>cominotti</id>
+      <name>Danilo Cominotti Marques</name>
+      <email>code@cominotti.dev</email>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/cominotti/java-evo-linter.git</connection>
+    <developerConnection>scm:git:git@github.com:cominotti/java-evo-linter.git</developerConnection>
+    <url>https://github.com/cominotti/java-evo-linter</url>
+    <tag>HEAD</tag>
+  </scm>
 
   <modules>
     <module>linter-core</module>
@@ -19,7 +43,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.release>25</maven.compiler.release>
+    <maven.compiler.release>21</maven.compiler.release>
     <jackson.version>2.19.2</jackson.version>
     <junit.version>5.13.4</junit.version>
     <assertj.version>3.27.6</assertj.version>
@@ -42,6 +66,10 @@
     <jspecify.version>1.0.0</jspecify.version>
     <rewrite.maven.plugin.version>6.30.0</rewrite.maven.plugin.version>
     <rewrite.migrate.java.version>3.28.0</rewrite.migrate.java.version>
+    <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
+    <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
+    <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
+    <central.publishing.maven.plugin.version>0.10.0</central.publishing.maven.plugin.version>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.organization>cominotti</sonar.organization>
     <sonar.projectKey>cominotti_java-evo-linter</sonar.projectKey>
@@ -112,7 +140,7 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <version>[25,)</version>
+                  <version>[21,)</version>
                 </requireJavaVersion>
               </rules>
             </configuration>
@@ -126,7 +154,7 @@
         <configuration>
           <configLocation>${maven.multiModuleProjectDirectory}/rewrite.yml</configLocation>
           <activeRecipes>
-            <recipe>io.cominotti.javaevo.UseVarPolicy</recipe>
+            <recipe>dev.cominotti.java.evo.UseVarPolicy</recipe>
           </activeRecipes>
           <checkstyleDetectionEnabled>false</checkstyleDetectionEnabled>
           <exclusions>
@@ -196,7 +224,7 @@
             <compilerArgs>
               <arg>-XDcompilePolicy=simple</arg>
               <arg>--should-stop=ifError=FLOW</arg>
-              <arg>-Xplugin:ErrorProne -Xep:NullAway:ERROR -XepOpt:NullAway:AnnotatedPackages=io.cominotti.javaevo -XepOpt:NullAway:CheckOptionalEmptiness=true -Xep:NullOptional:ERROR -Xep:NullableOptional:ERROR -Xep:OptionalNotPresent:ERROR -Xep:OptionalMapToOptional:ERROR -Xep:OptionalMapUnusedValue:ERROR -Xep:OptionalEquality:ERROR -Xep:OptionalOfRedundantMethod:ERROR -Xep:UnnecessaryOptionalGet:ERROR</arg>
+              <arg>-Xplugin:ErrorProne -Xep:NullAway:ERROR -XepOpt:NullAway:AnnotatedPackages=dev.cominotti.java.evo -XepOpt:NullAway:CheckOptionalEmptiness=true -Xep:NullOptional:ERROR -Xep:NullableOptional:ERROR -Xep:OptionalNotPresent:ERROR -Xep:OptionalMapToOptional:ERROR -Xep:OptionalMapUnusedValue:ERROR -Xep:OptionalEquality:ERROR -Xep:OptionalOfRedundantMethod:ERROR -Xep:UnnecessaryOptionalGet:ERROR</arg>
               <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
             </compilerArgs>
             <annotationProcessorPaths>
@@ -331,6 +359,76 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>central-release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>${maven.source.plugin.version}</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>${maven.javadoc.plugin.version}</version>
+            <configuration>
+              <source>${maven.compiler.release}</source>
+              <notimestamp>true</notimestamp>
+              <quiet>true</quiet>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>${maven.gpg.plugin.version}</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <bestPractices>true</bestPractices>
+              <gpgArguments>
+                <arg>--pinentry-mode</arg>
+                <arg>loopback</arg>
+              </gpgArguments>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>${central.publishing.maven.plugin.version}</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>true</autoPublish>
+              <waitUntil>published</waitUntil>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <profile>
       <id>license-fix</id>
       <properties>

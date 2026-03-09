@@ -4,17 +4,18 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.cominotti.javaevo</groupId>
+    <groupId>dev.cominotti.java.evo</groupId>
     <artifactId>java-evo-linter-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>linter-cli</artifactId>
   <name>java-evo-linter-cli</name>
+  <description>Command-line entry point for java-evo-linter.</description>
 
   <dependencies>
     <dependency>
-      <groupId>io.cominotti.javaevo</groupId>
+      <groupId>dev.cominotti.java.evo</groupId>
       <artifactId>linter-core</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -68,7 +69,7 @@
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>io.cominotti.javaevo.linter.cli.Main</mainClass>
+                  <mainClass>dev.cominotti.java.evo.linter.cli.Main</mainClass>
                 </transformer>
               </transformers>
             </configuration>

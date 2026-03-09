@@ -3,13 +3,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.cominotti.javaevo.examples</groupId>
+  <groupId>dev.cominotti.java.evo.examples</groupId>
   <artifactId>maven-plugin-consumer</artifactId>
   <version>0.1.0-SNAPSHOT</version>
 
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <java.evo.linter.version>0.1.0-SNAPSHOT</java.evo.linter.version>
   </properties>
 
   <build>
@@ -24,9 +25,9 @@
       </plugin>
 
       <plugin>
-        <groupId>io.cominotti.javaevo</groupId>
+        <groupId>dev.cominotti.java.evo</groupId>
         <artifactId>linter-maven-plugin</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>${java.evo.linter.version}</version>
         <executions>
           <execution>
             <id>java-evo-check</id>

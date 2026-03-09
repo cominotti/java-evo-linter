@@ -1,5 +1,18 @@
 # Maven Central groundwork for `java-evo-linter`
 
+## Repository status
+
+Implemented in the repository:
+
+- `groupId=dev.cominotti.java.evo` across the reactor, examples, and docs
+- package moves to `dev.cominotti.java.evo.linter.*`
+- Java 21 baseline in the reactor, with CI coverage on JDK 21 and JDK 25
+- Central metadata plus a `central-release` Maven profile for sources, Javadocs,
+  GPG signing, and Sonatype Central publishing
+- tag-driven release automation in `.github/workflows/release.yml`
+- example consumers for both the Maven plugin and the embeddable library
+- publishing runbook in `docs/release/maven-central.md`
+
 ## Summary
 
 - Maven Central is the right distribution channel for the embeddable library and the Maven plugin.
@@ -80,7 +93,7 @@
 
 ## Assumptions
 
-- There are no external consumers that require compatibility with `io.cominotti.javaevo.*`, so
+- There are no external consumers that require compatibility with `dev.cominotti.java.evo.*`, so
   this is a clean pre-publication break.
 - You can add the required Sonatype TXT record for `cominotti.dev`.
 - Gradle plugin support, snapshot distribution, and non-Maven build-tool integrations are out of

@@ -4,13 +4,14 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.cominotti.javaevo</groupId>
+    <groupId>dev.cominotti.java.evo</groupId>
     <artifactId>java-evo-linter-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>linter-core</artifactId>
   <name>java-evo-linter-core</name>
+  <description>Embeddable engine, configuration model, and report model for java-evo-linter.</description>
 
   <dependencies>
     <dependency>
@@ -40,6 +41,18 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.1</version>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Automatic-Module-Name>dev.cominotti.java.evo.linter.core</Automatic-Module-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>

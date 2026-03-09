@@ -22,7 +22,5 @@
     <module name="MissingNullCaseInSwitch"/>
     <module name="WhenShouldBeUsed"/>
     <module name="UseEnhancedSwitch"/>
-    <module name="UnusedCatchParameterShouldBeUnnamed"/>
-    <module name="UnusedLambdaParameterShouldBeUnnamed"/>
   </module>
 </module>

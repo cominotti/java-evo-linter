@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.cominotti.javaevo</groupId>
+    <groupId>dev.cominotti.java.evo</groupId>
     <artifactId>java-evo-linter-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
@@ -12,10 +12,11 @@
   <artifactId>linter-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
   <name>java-evo-linter-maven-plugin</name>
+  <description>Maven plugin that runs java-evo-linter during build verification.</description>
 
   <dependencies>
     <dependency>
-      <groupId>io.cominotti.javaevo</groupId>
+      <groupId>dev.cominotti.java.evo</groupId>
       <artifactId>linter-core</artifactId>
       <version>${project.version}</version>
     </dependency>
