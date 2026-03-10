@@ -11,7 +11,7 @@ help:
 	@echo "  license-check  Maven validate guardrail for Apache-2.0 SPDX headers"
 	@echo "  license-fix    Maven profile to auto-apply missing Apache-2.0 SPDX headers"
 	@echo "  verify         Run Maven verify (includes license-check via validate)"
-	@echo "  sonar-local    Run local SonarCloud analysis and print unresolved issues (requires SONAR_TOKEN env var)"
+	@echo "  sonar-local    Fetch SonarCloud quality gate and unresolved issues via REST API"
 	@echo "  central-preflight      Check local Maven Central prerequisites"
 	@echo "  central-render-settings Render ~/.m2/settings-central.xml from env vars"
 	@echo "  central-check-dns      Verify Sonatype TXT record presence (requires DOMAIN and VERIFICATION_KEY)"
