@@ -3,7 +3,7 @@
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -eu -o pipefail -c
 
-.PHONY: help verify license-check license-fix sonar \
+.PHONY: help verify license-check license-fix sonar-local \
 	central-preflight central-render-settings central-check-dns central-upload-gh-secrets central-dry-run
 
 help:
@@ -11,7 +11,7 @@ help:
 	@echo "  license-check  Maven validate guardrail for Apache-2.0 SPDX headers"
 	@echo "  license-fix    Maven profile to auto-apply missing Apache-2.0 SPDX headers"
 	@echo "  verify         Run Maven verify (includes license-check via validate)"
-	@echo "  sonar          Run SonarCloud analysis via Maven (requires SONAR_TOKEN env var)"
+	@echo "  sonar-local    Run local SonarCloud analysis and print unresolved issues (requires SONAR_TOKEN env var)"
 	@echo "  central-preflight      Check local Maven Central prerequisites"
 	@echo "  central-render-settings Render ~/.m2/settings-central.xml from env vars"
 	@echo "  central-check-dns      Verify Sonatype TXT record presence (requires DOMAIN and VERIFICATION_KEY)"
@@ -27,9 +27,8 @@ license-fix:
 verify:
 	mvn -B -ntp verify
 
-sonar:
-	: "$${SONAR_TOKEN:?SONAR_TOKEN must be exported in the environment}"
-	mvn -B -ntp verify sonar:sonar -Dsonar.token="$${SONAR_TOKEN}"
+sonar-local:
+	@./scripts/sonar-local.sh
 
 central-preflight:
 	./scripts/release/check-central-prereqs.sh
